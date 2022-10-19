@@ -7,11 +7,11 @@ size_t my_strlen(const char *str){
 
 int my_strcmp ( const char *ch1, const char *ch2){
 
-    while(*ch1!='\0' && *ch2!='\0'){
-        if(*ch1 != *ch2){
-            return *ch1-*ch2;
+    while(*ch1!='\0' && *ch2!='\0'){    // Mientras la posicion considerada no sea null en ninguna de las 2 palabras
+        if(*ch1 != *ch2){               // Si la letra es diferente en una palabra de la otra
+            return *ch1-*ch2;           // Devolver la diferencia entre las 2
         } else{
-            ch1++;
+            ch1++;                      // Si son iguales pasar a la siguiente posicion
             ch2++;
         }
 
@@ -75,4 +75,32 @@ char *my_strchr(const char *s, int caracter){
                                         //del apuntador
                             
     return (char *)s;
+}
+
+struct my_stack *my_stack_init(int size){
+    return NULL;
+}
+
+int my_stack_push(struct my_stack *stack, void *data){
+    return 3;
+}
+
+void* my_stack_pop(struct my_stack *stack){
+    return 0;
+}
+
+int my_stack_len(struct my_stack *stack){
+    return 4;
+}
+
+int my_stack_purge(struct my_stack *stack){
+    return 42;
+}
+
+struct my_stack *my_stack_read(char *filename){
+    return NULL;
+}
+
+int my_stack_write(struct my_stack *stack, char *filename){
+    return 0;
 }
