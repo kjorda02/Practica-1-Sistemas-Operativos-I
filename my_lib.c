@@ -77,20 +77,50 @@ char *my_strchr(const char *s, int caracter){
     return (char *)s;
 }
 
+/*  ========================================================================================================================================================================
+                                                                                | PARTE 2 |
+    ========================================================================================================================================================================
+*/
+
 struct my_stack *my_stack_init(int size){
-    return NULL;
+    struct my_stack *stackPt = malloc(sizeof(struct my_stack)); // Hacemos esto para crear el struct my_stack en el heap y no la pila
+    stackPt->top = NULL;                                        // Usamos -> para asignar valores a los campos del struct apuntados por el puntero stackPt
+    stackPt->size = size;
+
+    return stackPt;
 }
 
 int my_stack_push(struct my_stack *stack, void *data){
-    return 3;
-}
+    if (!(stack) || (stack->size < 1)){     // Si el puntero a la pila es NULL o si la longitud de los datos no es >0, devolver error (-1)
+        return -1;
+    }
 
-void* my_stack_pop(struct my_stack *stack){
+    struct my_stack_node *prev_top = stack->top;    // Guardamos el puntero al nodo superior
+
+    struct my_stack_node *stackNodePt = malloc(sizeof(struct my_stack_node));   // Creamos un nuevo nodo en el heap
+    stackNodePt->next = prev_top;   // El puntero next del nuevo nodo apunta a donde apuntaba el puntero top de la pila
+    stackNodePt->data = data;       // El puntero data apuntara a el puntero a los datos que nos pasan por parametro
+
+    stack->top = stackNodePt;       // El puntero top ahora apuntara al nuevo nodo
     return 0;
 }
 
+void* my_stack_pop(struct my_stack *stack){
+    if (!stack->top){
+        return NULL;
+    }
+
+    void* datos = (stack->top)->data;  // Guardar el puntero a los datos del nodo que vamos a eliminar
+
+    struct my_stack_node *sigPt = (stack->top)->next;
+    free(stack->top);
+    stack->top = sigPt;
+
+    return datos;
+}
+
 int my_stack_len(struct my_stack *stack){
-    return 4;
+    return -37;
 }
 
 int my_stack_purge(struct my_stack *stack){
