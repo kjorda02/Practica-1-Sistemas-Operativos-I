@@ -160,10 +160,72 @@ int my_stack_purge(struct my_stack *stack) {
 
 }
 
+/*
 struct my_stack *my_stack_read(char *filename){
     return NULL;
+}*/
+
+struct my_stack *my_stack_read(char *filename){
+    struct my_stack *s;
+    int size;
+    int fd2=open(filename,O_RDONLY);
+
+    //leemos size
+    read(fd2,&size,sizeof(int));
+    s=my_stack_init(size);
+
+    void *data;
+    data=malloc(size); //Reservamos espacio para data
+    while(read(fd2,data,size)>0){
+        //leemos data y lo escribmos en la nueva pila
+        my_stack_push(s,data);
+
+        data=malloc(size);
+
+    }
+    close(fd2);
+    return s;
 }
 
-int my_stack_write(struct my_stack *stack, char *filename){
+/*int my_stack_write(struct my_stack *stack, char *filename){
     return 0;
+}*/
+
+int my_stack_write(struct my_stack *stack, char *filename){
+        //Pila Invertida
+       struct my_stack *Saux;
+       struct my_stack_node *aux;
+       void *llisAux[my_stack_len(stack)];
+       aux=stack->top;
+       //Copia de la pila Original
+       int i=0;
+       while(aux!=NULL){
+           llisAux[i]=aux->data;
+            aux=aux->next;
+            i++;
+
+       }
+
+       Saux=my_stack_init(stack->size);
+       //Creamos una pila Auxiliar con el contenido inverso 
+       i=0;
+       while(i<my_stack_len(stack)){
+           my_stack_push(Saux,llisAux[i]);
+           i++;
+
+       }
+       //Saux es la pila inveritda
+       int size=stack->size;
+       int fd=open(filename,O_WRONLY | O_CREAT | O_TRUNC,0666);
+       write(fd,&size,sizeof(int));
+       aux=Saux->top;
+       int numEscritos=0;
+       while(aux!=NULL){
+         void *data=my_stack_pop(Saux);
+         write(fd,data,size);
+         aux=aux->next;
+         numEscritos++;
+       } 
+       return numEscritos;
+
 }
