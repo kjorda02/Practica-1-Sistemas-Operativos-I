@@ -119,12 +119,45 @@ void* my_stack_pop(struct my_stack *stack){
     return datos;
 }
 
-int my_stack_len(struct my_stack *stack){
+/*int my_stack_len(struct my_stack *stack){
     return -37;
+}*/
+
+int my_stack_len(struct my_stack *stack) {
+    int len=0;
+    struct my_stack_node *aux =stack->top;
+
+    while(aux!=NULL){
+        len++;
+        aux=aux->next;
+
+
+    }
+    return len;
 }
 
-int my_stack_purge(struct my_stack *stack){
+/*int my_stack_purge(struct my_stack *stack){
     return 42;
+}*/
+
+int my_stack_purge(struct my_stack *stack) {
+    int bytes=0;
+    struct my_stack_node *aux=stack->top;
+
+    while(aux!=NULL){
+        struct my_stack_node *aux2=aux;
+        aux=aux2->next;
+        free(aux2->data);
+        bytes+=stack->size; 
+        free(aux2);
+        bytes+=sizeof(struct my_stack_node);
+
+
+    }
+    free(stack);
+    bytes+=sizeof(struct my_stack);
+    return bytes;
+
 }
 
 struct my_stack *my_stack_read(char *filename){
