@@ -1,8 +1,16 @@
 #include "my_lib.h"
 #include <stdbool.h>
 
-size_t my_strlen(const char *str){
-    return 0;
+size_t my_strlen(const char *str) {
+    size_t sum=0;
+    char aux=*str; //Tengo el elemento 0 del array
+
+    while (aux !='\0') {
+        sum++;
+        str++;
+        aux=*str;
+    }
+    return sum;
 }
 
 int my_strcmp ( const char *ch1, const char *ch2){
@@ -49,10 +57,27 @@ char *my_strncpy(char *dest, const char *src, size_t n){
     return dest;
 }
 
-char *my_strcat(char *dest, const char *src){
-    return 0;
-}
+char *my_strcat(char *dest, const char *src) {return 0;}
+/*
+char my_strcat(char *dest, const char *src) {
+    char aux;
+    int n=my_strlen(dest); //obtenemos la longitud de dest
+    char ptraux=dest; //Guardamos el valor a devolver
 
+    dest=dest+(n); //nos situamos al final de la cadena apuntada por dest
+    aux=*src;
+
+    //copiamos la cadena apuntada por src 
+    while(aux!='\0') { 
+        dest=aux;
+        src++;
+        dest++;
+        aux=src;
+
+    }
+    return ptraux;
+}
+*/
 char *my_strchr(const char *s, int caracter){
     int encontrado=0;
     while (*s!='\0' && encontrado==0){  //mientras el elemento no sea un espacio y no hayamaos
@@ -191,41 +216,46 @@ struct my_stack *my_stack_read(char *filename){
     return 0;
 }*/
 
-int my_stack_write(struct my_stack *stack, char *filename){
-        //Pila Invertida
-       struct my_stack *Saux;
-       struct my_stack_node *aux;
-       void *llisAux[my_stack_len(stack)];
-       aux=stack->top;
-       //Copia de la pila Original
-       int i=0;
-       while(aux!=NULL){
-           llisAux[i]=aux->data;
-            aux=aux->next;
-            i++;
+int my_stack_write(struct my_stack *stack, char * filename) {
 
-       }
+  int fichero = open(filename, O_WRONLY | O_CREAT | 
+  O_TRUNC, S_IRUSR | S_IWUSR);
 
-       Saux=my_stack_init(stack->size);
-       //Creamos una pila Auxiliar con el contenido inverso 
-       i=0;
-       while(i<my_stack_len(stack)){
-           my_stack_push(Saux,llisAux[i]);
-           i++;
+  // Escrivimos el tamaño de los datos del fichero
+  int TamañoFichero = write(fichero, & (stack -> size), sizeof(stack -> size));
+  
+  if (TamañoFichero == -1) {
+    return -1;
+  }
+  int TamañoDatos = stack -> size;
 
-       }
-       //Saux es la pila inveritda
-       int size=stack->size;
-       int fd=open(filename,O_WRONLY | O_CREAT | O_TRUNC,0666);
-       write(fd,&size,sizeof(int));
-       aux=Saux->top;
-       int numEscritos=0;
-       while(aux!=NULL){
-         void *data=my_stack_pop(Saux);
-         write(fd,data,size);
-         aux=aux->next;
-         numEscritos++;
-       } 
-       return numEscritos;
+  // Creamos una pila auxiliar del mismo tamaño que la pila original
+  struct my_stack *pila_aux = my_stack_init(TamañoDatos);
+  void *data_original_stack;
 
+  // vamos copiando los nodos de la pila original a la auxiliar, uno a uno
+  struct my_stack_node *ApuntadorNodo = stack -> top;
+  int indice = 0;
+  while (ApuntadorNodo != NULL) {
+    data_original_stack = ApuntadorNodo -> data;
+    my_stack_push(pila_aux, data_original_stack);
+    ApuntadorNodo = ApuntadorNodo -> next;
+  }
+
+  // Vamos haciendo pops i escribiendo los datos de los nodos de la pila auxiliar
+  // al fitchero, a cada iteració augmentamos un contador d'elements
+  void *AgruparDatos = my_stack_pop(pila_aux);
+  while (AgruparDatos != NULL) {
+    if (write(fichero, AgruparDatos, TamañoDatos) == TamañoDatos) {
+      indice++;
+    }
+    AgruparDatos = my_stack_pop(pila_aux);
+  }
+
+  //cerramos el fichero
+  if (close(fichero) == -1) {
+    return -1;
+  }
+
+  return indice;
 }
