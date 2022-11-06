@@ -57,27 +57,25 @@ char *my_strncpy(char *dest, const char *src, size_t n){
     return dest;
 }
 
-char *my_strcat(char *dest, const char *src) {return 0;}
-/*
-char my_strcat(char *dest, const char *src) {
+char *my_strcat(char *dest, const char *src) {
     char aux;
     int n=my_strlen(dest); //obtenemos la longitud de dest
-    char ptraux=dest; //Guardamos el valor a devolver
+    char *ptraux=dest; //Guardamos el valor a devolver
 
     dest=dest+(n); //nos situamos al final de la cadena apuntada por dest
     aux=*src;
 
     //copiamos la cadena apuntada por src 
     while(aux!='\0') { 
-        dest=aux;
+        *dest=aux;
         src++;
         dest++;
-        aux=src;
+        aux=*src;
 
     }
     return ptraux;
 }
-*/
+
 char *my_strchr(const char *s, int caracter){
     int encontrado=0;
     while (*s!='\0' && encontrado==0){  //mientras el elemento no sea un espacio y no hayamaos
