@@ -1,3 +1,4 @@
+// Jose Luque Mut, Krishna Jorda Jimenez, Valentino Coppola Ferrari
 #include "my_lib.h"
 #include <stdbool.h>
 
@@ -27,20 +28,37 @@ int my_strcmp ( const char *ch1, const char *ch2){
     return 0;
 }
 
-char *my_strcpy(char *dest, const char *src){
-    char *puntero = dest; // Guardamos este puntero para no perderlo
+/*
+    my_strcpy: Asigna todos los caracteres de una string pasada por argumento a otra string pasada por argumento
 
-    while(*src != '\0'){ // Mientras no llegamos al final de src
-        *dest = *src;
-        src++;
-        dest++;
+    dest:   Puntero a el array destino (donde se va a copiar la string fuente)
+    src:    String a copiar (puntero a el primer caracter)
+    salida: Puntero a el array destino (devuelve dest)
+*/
+char *my_strcpy(char *dest, const char *src){
+    char *puntero = dest; // Guardamos dest para no perderlo
+
+    while(*src != '\0'){    // Mientras no llegamos al final de src
+        *dest = *src;       // Asignamos el contenido de el caracter apuntado por src a la posicion de memoria apuntada por dest
+        src++;              // Pasamos a el siguiente caracter (en fuente)
+        dest++;             // Pasamos a el siguiente caracter (en destino)
     }
 
-    *dest = '\0'; // Importante para finalizar la cadena de dest
+    *dest = '\0';           // Importante para finalizar la cadena de dest
 
-    return puntero;
+    return puntero;         // Devolvemos dest
 }
 
+
+/*
+    my_strncpy: Asigna los primeros n caracteres de una string pasada por argumento a otra string pasada por argumento
+    ademas, si se queda sin caracteres en src pero no ha copiado los n caracteres aun, copiara bytes nulos ('\0')
+
+    dest:   Puntero a el array destino (donde se va a copiar la string fuente)
+    src:    String a copiar (puntero a el primer caracter)
+    n:      Numero de caracteres a copiar
+    salida: Puntero a el array destino (devuelve dest)
+*/
 char *my_strncpy(char *dest, const char *src, size_t n){
     bool fin = false;
     for (int i = 0; i < n; i++){ // Iteramos el numero n veces ya que hay que poner \0 si se acaba src
@@ -105,14 +123,28 @@ char *my_strchr(const char *s, int caracter){
     ========================================================================================================================================================================
 */
 
+/*
+    my_stack_init: Reserva espacio para una variable de tipo struct my_stack, y inicializa la misma con top = NULL y size con el valor que nos pasan por parametro
+
+    size: Argumento de entrada que indica el tamaño de los datos que contendra la pila
+    salida: Puntero a la pila recien creada
+*/
 struct my_stack *my_stack_init(int size){
-    struct my_stack *stackPt = malloc(sizeof(struct my_stack)); // Hacemos esto para crear el struct my_stack en el heap y no la pila
+    struct my_stack *stackPt = malloc(sizeof(struct my_stack)); // Hacemos esto para crear el struct my_stack en el heap y no en la pila
     stackPt->top = NULL;                                        // Usamos -> para asignar valores a los campos del struct apuntados por el puntero stackPt
     stackPt->size = size;
 
     return stackPt;
 }
 
+/*
+    my_stack_push: Añade un nuevo nodo a la pila.
+
+    stack:  Puntero a un struct my_stack (la pila en si a la que queremos añadir el nodo)
+    data: Puntero a los datos que contendra el nuevo nodo de la pila
+
+    salida: 0 si no hay error, -1 si hay error
+*/
 int my_stack_push(struct my_stack *stack, void *data){
     if (!(stack) || (stack->size < 1)){     // Si el puntero a la pila es NULL o si la longitud de los datos no es >0, devolver error (-1)
         return -1;
@@ -128,23 +160,27 @@ int my_stack_push(struct my_stack *stack, void *data){
     return 0;
 }
 
+
+/*
+    my_stack_pop: Elimina un nodo de la pila (el ultimo que se habia añadido obviamente)
+
+    stack:  Puntero a un struct my_stack (la pila en si de la cual queremos eliminar un nodo)
+
+    salida: Puntero a los datos del nodo elimindado
+*/
 void* my_stack_pop(struct my_stack *stack){
-    if (!stack->top){
+    if (!stack->top){                   // Si no hay elementos en la pila, devolver NULL directamente
         return NULL;
     }
 
-    void* datos = (stack->top)->data;  // Guardar el puntero a los datos del nodo que vamos a eliminar
+    void* datos = (stack->top)->data;   // Guardar el puntero a los datos del nodo que vamos a eliminar
 
-    struct my_stack_node *sigPt = (stack->top)->next;
-    free(stack->top);
-    stack->top = sigPt;
+    struct my_stack_node *sigPt = (stack->top)->next;   // Guardamos el puntero al nodo al que apunta el nodo que vamos a eliminar (el nuevo nodo superior)
+    free(stack->top);                   // Liberamos la memoria del nodo superior (lo eliminamos)
+    stack->top = sigPt;                 // El segundo nodo superior gurdado previamente se convierte en el nuevo nodo superior
 
     return datos;
 }
-
-/*int my_stack_len(struct my_stack *stack){
-    return -37;
-}*/
 
 int my_stack_len(struct my_stack *stack) {
     int len=0;
@@ -159,10 +195,9 @@ int my_stack_len(struct my_stack *stack) {
     return len;
 }
 
-/*int my_stack_purge(struct my_stack *stack){
-    return 42;
-}*/
+/*
 
+*/
 int my_stack_purge(struct my_stack *stack) {
     int bytes=0;
     struct my_stack_node *aux=stack->top;
