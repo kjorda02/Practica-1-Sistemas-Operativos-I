@@ -29,7 +29,7 @@ char *read_line(char *line){
 /*
 *   Funcio: check_internal
 *   -----------------
-*   Retorna la funció si es interna
+*   devuelve la funcion si es interna
 *   
 *   char **args: argu
 */
