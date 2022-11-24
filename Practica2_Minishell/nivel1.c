@@ -36,11 +36,8 @@ char const PROMPT = '$';
 #include <stdlib.h> //setenv(), getenv()
 #include <string.h> //strcmp(), strtok(), strerror()
 #include <unistd.h> //NULL, getcwd(), chdir()
-#include <signal.h>
-#include <sys/file.h> // file library, open()
 #include <sys/types.h> //pid_t
 #include <sys/wait.h>  //wait()
-#include <sys/stat.h>
 
 char *read_line(char *line); //HECHO
 int parse_args(char **args, char *line); //HECHO
