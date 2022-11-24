@@ -49,9 +49,9 @@ char const PROMPT = '$';
 char *read_line(char *line); //HECHO
 int parse_args(char **args, char *line); //HECHO
 int execute_line(char *line);
+int check_internal(char **args);//HECHO
 int internal_fg(char **args);
 int internal_bg(char **args);
-int check_internal(char **args);
 int internal_cd(char **args);   
 int internal_export(char **args); 
 int internal_source(char **args); 
@@ -180,24 +180,18 @@ int internal_source(char **args) {
     return 1;
 }
 
-int internal_jobs(char **args) {
-    #if DEBUGN1 
-        printf("[internal_jobs()→ Esta función mostrará el PID de los procesos que no estén en foreground]\n");
-    #endif
+int internal_jobs(char **args) {  
+     printf("[internal_jobs()→ Esta función mostrará el PID de los procesos que no estén en foreground]\n");
     return 1;
 }
 
 int internal_fg(char **args) {
-    #if DEBUGN1 
-        printf("[internal_fg()→ Esta función enviará un trabajo detenido al foreground reactivando su ejecución, o uno del background al foreground ]\n");
-    #endif
+    printf("[internal_fg()→ Esta función enviará un trabajo detenido al foreground reactivando su ejecución, o uno del background al foreground ]\n");   
     return 1;
 }
 
 int internal_bg(char **args) {
-    #if DEBUGN1 
-        printf("[internal_bg()→ Esta función reactivará un proceso detenido para que siga ejecutándose pero en segundo plano]\n");
-    #endif
+    printf("[internal_bg()→ Esta función reactivará un proceso detenido para que siga ejecutándose pero en segundo plano]\n");
     return 1;
 }
 
