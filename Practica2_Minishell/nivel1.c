@@ -9,7 +9,7 @@
 =                 VARIABLES, DEFINES Y INCLUDES                             =
 ============================================================================*/
 
-//DIRECTIVA DEL PROCESADOR
+//DIRECTIVAS PARA EL PREPROCESADOR
 #define _POSIX_C_SOURCE 200112L
 
 #define RESET_FORMATO "\x1b[0m"
@@ -23,6 +23,7 @@
 #define CYAN_T "\x1b[36m"
 #define BLANCO_T "\x1b[37m"
 #define NEGRITA "\x1b[1m"
+#define GRIS_T "\x1b[94m"
 
 //TAMAÑOS
 #define COMMAND_LINE_SIZE 1024
@@ -60,24 +61,21 @@ int internal_jobs();
 =                            FUNCIONES Y MÉTODOS                             =
 =============================================================================*/
 char line[COMMAND_LINE_SIZE]; // #define COMMAND_LINE_SIZE 1024
+
 int main(){
-
-while (1) {
-   if (read_line(line)){
-       execute_line(line);
-   }
+    while (1) {
+        if (read_line(line)){
+            execute_line(line);
+        }
+    }
+    return 0;
 }
-return 0;
-}
-
 
 void imprimir_prompt() {
     //"%s" = cadena de caracteres terminada con "\0"
     printf(NEGRITA ROJO_T "%s" BLANCO_T ":", getenv("USER"));
     //"%c"= imprime el caracter ASCII correspondiente
     printf(AMARILLO_T "MINISHELL" BLANCO_T "%c " RESET_FORMATO, PROMPT);
-
-    printf("%c ", PROMPT);
 
     //forzamos el vaciado del buffer de salida
     fflush(stdout);
@@ -92,19 +90,17 @@ void imprimir_prompt() {
 */
 
 char *read_line(char *line){
-
- imprimir_prompt();
- //fgets: Función que se encarga de leer o almacenar una cadena de caracteres introducida mediante el teclado.
- char *ptr = fgets(line,COMMAND_LINE_SIZE,stdin);
-  if (ptr) {
-        // ELiminamos el salto de línea (ASCII 10) sustituyéndolo por el \0
-        char *pos = strchr(line, 10);
+    imprimir_prompt();
+    //fgets: Función que se encarga de leer o almacenar una cadena de caracteres introducida mediante el teclado.
+    char *ptr = fgets(line,COMMAND_LINE_SIZE,stdin);
+    if (ptr) {    // Si fgets no devuelve null (no ha habido error ni end-of-file)
+        char *pos = strchr(line, '\n'); // Buscamos la primera ocurrencia de '\n'
         if (pos != NULL){
-            *pos = '\0';
-        } 
-	}  else {   //ptr==NULL 
+            *pos = '\0';    // Si ha encontrado '\n' lo systituye por '\0'
+        }
+    } else {   // Si fgets devuelve null (hay end-of-file o error de entrada)
         printf("\r");
-        if (feof(stdin)) { //se ha pulsado Ctrl+D
+        if (feof(stdin)) { // Si se ha pulsado Ctrl+D (end-of-file)
             fprintf(stderr,"Hasta la proxima, Adios!\n");
             exit(0);
         }   
@@ -112,24 +108,22 @@ char *read_line(char *line){
     return ptr;
 }
 /*
-* Funcion: execute_line()
-*------------------------
-* 
+    Recibe la linea leida de stdin por parametro
+    Devuelve 0 si no ha habido error
 */
 int execute_line(char *line){
 
- char *args[ARGS_SIZE];
-//obtener la linea fragmentada en tokens
- parse_args(args,line);
+    char* args[ARGS_SIZE];
+    parse_args(args,line);  //obtener la linea fragmentada en tokens
  
-//Si hay algo dentro de args mira si se trata de un comando interno
- if(args[0]){
-    check_internal(args);
- }else {
-    return -1;
- }
-    return 0;
+    //Si hay algo dentro de args mira si se trata de un comando interno (y lo ejecuta)
+    if(args[0]){
+        check_internal(args);
+        return 0;
+    }
+    return 1;
 }
+
 /*
 * Funcion: parse_args()
 *------------------------
@@ -143,11 +137,14 @@ int parse_args(char **args, char *line) {
     args[i] = strtok(line, " \t\n\r");
 
     // si args[i]!= NULL && *args[i]!='#' pasamos al siguiente token
-    while (args[i] && args[i][0] != '#') { 
+    while (args[i] && args[i][0] != '#') {
+        #if DEBUGN1
+            printf(GRIS_T"parse_args()→token %d: %s\n"RESET_FORMATO, i, args[i]);  // Mensaje de debug
+        #endif
         i++;
         args[i] = strtok(NULL, " \t\n\r");
-
     }
+
     //si el ultimo token no es NULL lo convertimos en NULL
     if (args[i]) {
         args[i] = NULL; // por si el último token es el símbolo comentario
@@ -165,7 +162,7 @@ int parse_args(char **args, char *line) {
 int check_internal(char **args) {
     if (strcmp(args[0], "cd")==0){
         return internal_cd(args);
-}
+    }
     if (strcmp(args[0], "export")==0){
         return internal_export(args);
     }
@@ -189,37 +186,37 @@ int check_internal(char **args) {
 
 
 int internal_cd(char **args) {
-    printf("[internal_cd()→ comando interno no implementado]\n");
+    printf(GRIS_T"[internal_cd()→ comando interno no implementado]\n"RESET_FORMATO);
     return 1;
 } 
 
 int internal_export(char **args) {
-    printf("[internal_export()→ comando interno no implementado]\n");
+    printf(GRIS_T"[internal_export()→ comando interno no implementado]\n"RESET_FORMATO);
     return 1;
 }
 
 int internal_source(char **args) {
-    printf("[internal_source()→ comando interno no implementado]\n");
+    printf(GRIS_T"[internal_source()→ comando interno no implementado]\n"RESET_FORMATO);
     return 1;
 }
 
 int internal_jobs(char **args) {
     #if DEBUGN1 
-        printf("[internal_jobs()→ Esta función mostrará el PID de los procesos que no estén en foreground]\n");
+        printf(GRIS_T"[internal_jobs()→ Esta función mostrará el PID de los procesos que no estén en foreground]\n"RESET_FORMATO);
     #endif
     return 1;
 }
 
 int internal_fg(char **args) {
     #if DEBUGN1 
-        printf("[internal_fg()→ Esta función enviará un trabajo detenido al foreground reactivando su ejecución, o uno del background al foreground ]\n");
+        printf(GRIS_T"[internal_fg()→ Esta función enviará un trabajo detenido al foreground reactivando su ejecución, o uno del background al foreground ]\n"RESET_FORMATO);
     #endif
     return 1;
 }
 
 int internal_bg(char **args) {
     #if DEBUGN1 
-        printf("[internal_bg()→ Esta función reactivará un proceso detenido para que siga ejecutándose pero en segundo plano]\n");
+        printf(GRIS_T"[internal_bg()→ Esta función reactivará un proceso detenido para que siga ejecutándose pero en segundo plano]\n"RESET_FORMATO);
     #endif
     return 1;
 }
