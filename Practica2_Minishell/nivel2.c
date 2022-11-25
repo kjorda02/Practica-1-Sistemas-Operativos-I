@@ -11,6 +11,7 @@
 
 //DIRECTIVAS PARA EL PREPROCESADOR
 #define _POSIX_C_SOURCE 200112L
+#define DEBUGN1 1
 
 #define RESET_FORMATO "\x1b[0m"
 #define NEGRO_T "\x1b[30m"
@@ -72,7 +73,8 @@ void imprimir_prompt() {
     //"%s" = cadena de caracteres terminada con "\0"
     printf(NEGRITA ROJO_T "%s" BLANCO_T ":", getenv("USER"));
     //"%c"= imprime el caracter ASCII correspondiente
-    printf(AMARILLO_T "MINISHELL" BLANCO_T "%c " RESET_FORMATO, PROMPT);
+    printf(AMARILLO_T "%s" BLANCO_T "%c " RESET_FORMATO, getenv("PWD"), PROMPT);
+
 
     //forzamos el vaciado del buffer de salida
     fflush(stdout);
