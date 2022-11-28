@@ -11,7 +11,10 @@
 
 //DIRECTIVAS PARA EL PREPROCESADOR
 #define _POSIX_C_SOURCE 200112L
-#define DEBUGN1 1
+#define DEBUGN1 0
+#define DEBUGN2 1
+#define FAILURE -1
+#define SUCCESS 0
 
 #define RESET_FORMATO "\x1b[0m"
 #define NEGRO_T "\x1b[30m"
@@ -51,7 +54,7 @@ int internal_cd(char **args);
 int internal_export(char **args); 
 int internal_source(char **args); 
 int internal_jobs();
-
+int internal_cd(char** args);
 
 
 
@@ -87,7 +90,6 @@ void imprimir_prompt() {
 *Devolverá un puntero a la línea leída
 *
 */
-
 char *read_line(char *line){
     imprimir_prompt();
     //fgets: Función que se encarga de leer o almacenar una cadena de caracteres introducida mediante el teclado.
@@ -100,7 +102,7 @@ char *read_line(char *line){
     } else {   // Si fgets devuelve null (hay end-of-file o error de entrada)
         printf("\r");
         if (feof(stdin)) { // Si se ha pulsado Ctrl+D (end-of-file)
-            fprintf(stderr,"Hasta la proxima, Adios!\n");
+            fprintf(stderr,"\nHasta la proxima, Adios!\n");
             exit(0);
         }   
     }
@@ -138,7 +140,7 @@ int parse_args(char **args, char *line) {
     // si args[i]!= NULL && *args[i]!='#' pasamos al siguiente token
     while (args[i] && args[i][0] != '#') {
         #if DEBUGN1
-            fprintf(stderr, GRIS_T"parse_args()→token %d: %s\n"RESET_FORMATO, i, args[i]);  // Mensaje de debug
+            fprintf(stderr, GRIS_T"[parse_args()→token %d: %s]\n"RESET_FORMATO, i, args[i]);  // Mensaje de debug
         #endif
         i++;
         args[i] = strtok(NULL, " \t\n\r");
@@ -183,12 +185,95 @@ int check_internal(char **args) {
     return 0; // no es un comando interno
 }
 
-
+/*
+    Recibe el array de tokens por argumento
+    Cambia el directorio y la variable de entorno PWD dependiendo en los tokens
+    Devuelve 0 si ha ido bien y -1 si ha habido error
+*/
 int internal_cd(char **args) {
-    #if DEBUGN1 
-        fprintf(stderr, GRIS_T"[internal_cd()→ comando interno no implementado]\n"RESET_FORMATO);
+    // Obtenemos la ruta a la que cambiar a partir de los argumentos/tokens
+    char* ruta;
+    if (args[1] == NULL){  // Si no tiene ningun argumento (solo 'cd')
+        ruta = getenv("HOME");  // Guarda la ruta a 'home'
+    }else{
+        char str[COMMAND_LINE_SIZE];
+        str[0] = '\0';
+        // Parse comillas
+        if (args[1][0] == '"'){
+            strcat(str, args[1]+1);  // Añade el primer argumento sin la comilla inicial
+
+            for (int i = 2; args[i] != NULL; i++){
+                strcat(str, " ");
+                char* comillas = strchr(args[i],'"');  // Busca el caracter '"' en el token
+                if (comillas != NULL){
+                    *comillas = '\0';
+                    args[i+1] = NULL;  // Si ha encontrado comillas hemos acabado y podemos hacer esto porque el ultimo puntero de args siempre es NULL
+                }
+                strcat(str, args[i]);
+            }
+        }else{
+            // Parse no comillas
+            for (int i = 1; args[i] != NULL; i++){
+                int seguirLeyendo = 0;
+                char* backslash = strchr(args[i], '\\');  // Buscamos el caracter '\' en el token
+
+                while (backslash != NULL){
+                    if (*(backslash+1) != '\\'){  // Si el siguiente caracter no es '\'
+                        *backslash = '\0';
+                        if (*(backslash+1) != '\0'){ // Si el caracter '\' no es el ultimo lo eliminamos  (obtenemos las 2 strings y las juntamos sin el)
+                            char parte2[strlen(args[i])];
+                            strcpy(parte2, (backslash+1)); // No podemos usar (backslash+1) directamente en strcat porque C hace cosas raras
+                            strcat(args[i], parte2);  // Eliminamos
+                        }
+                        else{  // Si es el ultimo
+                            seguirLeyendo = 1;
+                        }
+                    }
+                    else{  // Si el siguiente caracter es '\'
+                        backslash++;
+                    }
+                    
+                    backslash = strchr(backslash, '\\');  // Buscamos el siguiente '\' (empezando en la siguiente posicion del ultimo '\')
+                }
+
+                if (!seguirLeyendo){  // Si no ha encontrado un '\' que viniera seguido de un '\0'
+                    args[i+1] = NULL;
+                }
+
+                strcat(str, args[i]);
+                if (args[i+1] != NULL){
+                    strcat(str, " ");
+                }
+            }
+        }
+        ruta = str;
+        printf("Ruta: |%s|\n", ruta);
+    }
+
+    // Cambiamos la ruta
+    if (chdir(ruta)){  // Llama a chdir() para cambiar de ruta y si no devuelve 0 informa del error
+        perror(ROJO_T"Error de chdir() al cambiar de ruta"RESET_FORMATO);
+        return FAILURE;
+    }
+
+    // Obtener el nuevo 'current working directory' con getcwd()
+    char cwd[COMMAND_LINE_SIZE];
+    if (getcwd(cwd, COMMAND_LINE_SIZE) == NULL){  // Llama a getcwd() y si devuelve NULL informa del error
+        perror(ROJO_T"Error de getcwd()\n"RESET_FORMATO);
+        return FAILURE;
+    }
+
+    // Actualizamos la variable de entorno PWD
+    if (setenv("PWD", cwd, 1)){
+        perror(ROJO_T"Error de setenv() al actualizar la variable de entorno PWD"RESET_FORMATO);
+        return FAILURE;
+    }
+
+    // Mensaje de debug
+    #if DEBUGN2
+        fprintf(stderr, GRIS_T"[Nuevo directorio actual: %s]\n", cwd);
     #endif
-    return 1;
+    return 0;
 } 
 
 int internal_export(char **args) {

@@ -86,7 +86,6 @@ void imprimir_prompt() {
 *Devolverá un puntero a la línea leída
 *
 */
-
 char *read_line(char *line){
     imprimir_prompt();
     //fgets: Función que se encarga de leer o almacenar una cadena de caracteres introducida mediante el teclado.
@@ -137,7 +136,7 @@ int parse_args(char **args, char *line) {
     // si args[i]!= NULL && *args[i]!='#' pasamos al siguiente token
     while (args[i] && args[i][0] != '#') {
         #if DEBUGN1
-            fprintf(stderr, GRIS_T"parse_args()→token %d: %s\n"RESET_FORMATO, i, args[i]);  // Mensaje de debug
+            fprintf(stderr, GRIS_T"[parse_args()→token %d: %s]\n"RESET_FORMATO, i, args[i]);  // Mensaje de debug
         #endif
         i++;
         args[i] = strtok(NULL, " \t\n\r");
@@ -185,21 +184,21 @@ int check_internal(char **args) {
 
 int internal_cd(char **args) {
     #if DEBUGN1 
-        fprintf(stderr, GRIS_T"[internal_cd()→ comando interno no implementado]\n"RESET_FORMATO);
+        fprintf(stderr, GRIS_T"[internal_cd()→ Esta funcion cambiara de directorio]\n"RESET_FORMATO);
     #endif
     return 1;
 } 
 
 int internal_export(char **args) {
     #if DEBUGN1 
-        fprintf(stderr, GRIS_T"[internal_export()→ comando interno no implementado]\n"RESET_FORMATO);
+        fprintf(stderr, GRIS_T"[internal_export()→ Esta funcion asignara valores a variables de entorno]\n"RESET_FORMATO);
     #endif
     return 1;
 }
 
 int internal_source(char **args) {
     #if DEBUGN1 
-        fprintf(stderr, GRIS_T"[internal_source()→ comando interno no implementado]\n"RESET_FORMATO);
+        fprintf(stderr, GRIS_T"[internal_source()→ Esta funcion ejecutara los comandos de un fichero]\n"RESET_FORMATO);
     #endif
     return 1;
 }
