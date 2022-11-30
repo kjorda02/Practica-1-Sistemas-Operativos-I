@@ -142,17 +142,31 @@ char *read_line(char *line){
 */
 int execute_line(char *line){
 
- char *args[ARGS_SIZE];
-//obtener la linea fragmentada en tokens
- parse_args(args,line);
+    char *args[ARGS_SIZE];
+    pid_t pid;
+    //obtener la linea fragmentada en tokens
+    parse_args(args,line);
  
-//Si hay algo dentro de args mira si se trata de un comando interno
- if(args[0]){
-    check_internal(args);
- }else {
-    return -1;
- }
-    return 0;
+    //Si hay algo dentro de args mira si se trata de un comando interno
+    if(args[0]){
+        check_internal(args);
+            if(check_internal(args) == 0){
+                pid=fork();
+                if(pid<0){
+                    perror("fork");
+                    exit(EXIT_FAILURE);
+                }
+                if(pid==0){ //proceso hijo
+                    if(execvp(args[0],args)){
+                        fprintf(stderr,%s,"no se encontró la orden \n",args[0]);
+                        exit(EXIT_FAILURE);
+                    }
+                }
+             }
+    }else {
+        return -1;
+    }
+        return 0;
 }
 /*
 * Funcion: parse_args()
