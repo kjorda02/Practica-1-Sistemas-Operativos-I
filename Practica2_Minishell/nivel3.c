@@ -326,7 +326,9 @@ int internal_export(char **args) {
 int internal_source(char **args) {
     //Abrimos un fichero indicado por consola en modo lectura 
     FILE *fp;
+    //array para guardar la linea leida,de tamaño 240(tamaño general de linea de un fichero de texto)	
     char *str[240];
+    //leemos el nombre del fichero por consola	
     printf("Introduzca el nombre del archivo:\n")
     fp=fopen(read_line(args),r);
 
