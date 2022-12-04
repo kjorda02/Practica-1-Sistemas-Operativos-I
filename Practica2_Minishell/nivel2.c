@@ -276,11 +276,32 @@ int internal_cd(char **args) {
     return 0;
 } 
 
+/*
+    Recibe el array de tokens por parametro
+    Actualiza la variable y el valor especificados por args[1]
+    Devuelve 0 si ha ido bien y -1 si ha habido error
+*/
 int internal_export(char **args) {
-    #if DEBUGN1 
-        fprintf(stderr, GRIS_T"[internal_export()→ comando interno no implementado]\n"RESET_FORMATO);
+    char* nombre = strtok(args[1], "=");
+    char* valor = strtok(NULL, "=");
+
+    char* valorInicial = getenv(nombre);
+    if (valorInicial){
+        #if DEBUGN2
+        printf(GRIS_T"Valor inicial de la variable %s: %s\n"RESET_FORMATO, nombre, valorInicial);
+        #endif
+    }else{
+        fprintf(stderr, ROJO_T"No se ha encontrado la variable de entorno %s\n"RESET_FORMATO, nombre);
+        return FAILURE;
+    }
+
+    setenv(nombre, valor, 1);
+
+    #if DEBUGN2
+    printf(GRIS_T"Nuevo valor de la variable de entorono %s: %s\n"RESET_FORMATO, nombre, getenv(nombre));
     #endif
-    return 1;
+
+    return SUCCESS;
 }
 
 int internal_source(char **args) {
