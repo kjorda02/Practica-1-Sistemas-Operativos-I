@@ -352,7 +352,7 @@ int internal_source(char **args) {
     //mientras no final de fichero
     while(fgets(str,240,fp)!=NULL){
         //busacmos saltos de linea y en caso de encontrarlos los cambiamos por "\0"
-        char* saltoLinea(str, "\n");
+        char* saltoLinea=strchr(str, "\n");
         if (saltoLinea != NULL){
                 *saltoLinea = '\0';
                 }
