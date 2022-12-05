@@ -144,7 +144,11 @@ imprimir_prompt();
 int execute_line(char *line){
 
     char *args[ARGS_SIZE];
-    pid_t pid;
+    pid_t pid, status;
+    char cwd[COMMAND_LINE_SIZE];
+    memset(cwd, '\0', sizeof(cwd)); 
+    strcpy(cwd, line);
+
     //obtener la linea fragmentada en tokens
     parse_args(args,line);
  
