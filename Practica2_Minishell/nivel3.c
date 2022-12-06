@@ -171,7 +171,7 @@ int execute_line(char *line){
                 }
                 else{//es el padre
                     //Actualizamos jobs_list
-                    jobs_list[0].status="E";
+                    jobs_list[0].status='E';
                     strcpy(jobs_list[0].cmd,cwd);
                     //wait
                     waitpid(-1, &status, 0);
@@ -224,16 +224,16 @@ int parse_args(char **args, char *line) {
 int check_internal(char **args) {
     if (strcmp(args[0], "cd")==0){
         return internal_cd(args);
-}
+    }
     if (strcmp(args[0], "export")==0){
         return internal_export(args);
     }
     if (strcmp(args[0], "source")==0){
         return internal_source(args);
-        }
+    }
     if (strcmp(args[0], "jobs")==0){
         return internal_jobs(args);
-        }
+    }
     if (strcmp(args[0], "fg")==0){
         return internal_fg(args);
     }
@@ -333,35 +333,59 @@ int internal_cd(char **args) {
 } 
 
 
+/*
+    Recibe el array de tokens por parametro
+    Actualiza la variable y el valor especificados por args[1]
+    Devuelve 0 si ha ido bien y -1 si ha habido error
+*/
 int internal_export(char **args) {
-    printf("[internal_export()→ comando interno no implementado]\n");
-    return 1;
+    char* nombre = strtok(args[1], "=");
+    char* valor = strtok(NULL, "=");
+
+    char* valorInicial = getenv(nombre);
+    if (valorInicial){
+        #if DEBUGN2
+        printf(GRIS_T"Valor inicial de la variable %s: %s\n"RESET_FORMATO, nombre, valorInicial);
+        #endif
+    }else{
+        fprintf(stderr, ROJO_T"No se ha encontrado la variable de entorno %s\n"RESET_FORMATO, nombre);
+        return FAILURE;
+    }
+
+    setenv(nombre, valor, 1);
+
+    #if DEBUGN2
+    printf(GRIS_T"Nuevo valor de la variable de entorono %s: %s\n"RESET_FORMATO, nombre, getenv(nombre));
+    #endif
+
+    return SUCCESS;
 }
 
 int internal_source(char **args) {
-    //Abrimos un fichero indicado por consola en modo lectura 
-    FILE *fp;
-    char *str[240];
-    printf("Introduzca el nombre del archivo:\n");
-    fp=fopen(read_line(args),"r");
+    if (args[1] == NULL){
+        perror(ROJO_T"Error de sintaxis. Usar la sintaxis \"source <nombre_fichero>\"");
+        return FAILURE;
+    }
 
-     if(fp == NULL) {//si el fichero no existe error
-      perror("Error opening file");
-      return(-1);
+    FILE *fichero = fopen(args[1], "r"); // Abrimos el fichero especificado en modo lectura 
+    char str[COMMAND_LINE_SIZE]; // Guarda la linea leida del fichero para ejecutarla posteriormente 
+
+    if (fichero == NULL) { // Si el fichero no existe error
+        perror(ROJO_T"Error opening file"RESET_FORMATO);
+        return(-1);
     }
-    //mientras no final de fichero
-    while(fgets(str,240,fp)!=NULL){
-        //busacmos saltos de linea y en caso de encontrarlos los cambiamos por "\0"
-        char* saltoLinea=strchr(str, "\n");
+
+    // Mientras no final de fichero
+    while(fgets(str, COMMAND_LINE_SIZE, fichero) != NULL){
+        fflush(fichero);  // Vaciamos el buffer
+        char* saltoLinea = strchr(str, '\n'); // Busacmos el salto de linea
         if (saltoLinea != NULL){
-                *saltoLinea = '\0';
-                }
+            *saltoLinea = '\0';  // En caso de encontrarlo lo cambiamos por "\0"
+        }
         execute_line(str);
-        //vaciamos el buffer
-        fflush(str);
     }
-    //cerramos fichero
-    fclose(fp);
+
+    fclose(fichero);  // Cerramos fichero
     return(0);
 }
 
