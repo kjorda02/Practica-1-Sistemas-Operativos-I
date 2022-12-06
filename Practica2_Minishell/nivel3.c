@@ -9,8 +9,9 @@
 =                 VARIABLES, DEFINES Y INCLUDES                             =
 ============================================================================*/
 
-//DIRECTIVA DEL PROCESADOR
+//DIRECTIVAS PARA EL PREPROCESADOR
 #define _POSIX_C_SOURCE 200112L
+#define DEBUGN3 1
 
 #define RESET_FORMATO "\x1b[0m"
 #define NEGRO_T "\x1b[30m"
@@ -23,11 +24,12 @@
 #define CYAN_T "\x1b[36m"
 #define BLANCO_T "\x1b[37m"
 #define NEGRITA "\x1b[1m"
+#define GRIS_T "\x1b[94m"
 
 //TAMAÑOS
 #define COMMAND_LINE_SIZE 1024
 #define ARGS_SIZE 64
-#define SUCCES 0
+#define SUCCESS 0
 #define FAILURE -1
 #define N_JOBS 64
 
@@ -74,34 +76,29 @@ struct info_job {
 static struct info_job jobs_list [N_JOBS] ;
 static char mi_shell[COMMAND_LINE_SIZE]; 
 
+char line[COMMAND_LINE_SIZE]; // #define COMMAND_LINE_SIZE 1024
 
 //Main
 int main(int argc, char *argv[]){
-    char cwd[COMMAND_LINE_SIZE];
-    char x ='\0';
-    jobs_list[0].pid=0;
-    jobs_list[0].status='N';
-    // copiamos el caracter [x] a los primeros "COMMAND_LINE_SIZE" caracteres de cwd
-    memset(cwd, x, COMMAND_LINE_SIZE);
+    // Inicializa jobs_list[0] con el pid a 0, status a 'N' y el cmd con todos los carateres a '\0'
+    jobs_list[0].pid = 0;
+    jobs_list[0].status = 'N';
+    memset(jobs_list[0].cmd, '\0', COMMAND_LINE_SIZE);
 
-    strcpy(mi_shell,argv[0]);   //Obtenemos el comando de ejecución del minishell y lo guardamos en "mi_shell"
+    strcpy(mi_shell, argv[0]);   //Obtenemos el comando de ejecución del minishell y lo guardamos en "mi_shell"
 
-        if (getcwd(cwd, COMMAND_LINE_SIZE) != NULL) {
-            printf("Directorio actual: %s\n", cwd);
-        } else {
-            perror("getcwd() error");
-            return FAILURE;
+    while (1) {
+        if (read_line(line)){
+            execute_line(line);
         }
-            return SUCCES;
+    }
 }
 
 void imprimir_prompt() {
     //"%s" = cadena de caracteres terminada con "\0"
     printf(NEGRITA ROJO_T "%s" BLANCO_T ":", getenv("USER"));
     //"%c"= imprime el caracter ASCII correspondiente
-    printf(AMARILLO_T "MINISHELL" BLANCO_T "%c " RESET_FORMATO, PROMPT);
-
-    printf("%c ", PROMPT);
+    printf(AMARILLO_T "%s" BLANCO_T "%c " RESET_FORMATO, getenv("PWD"), PROMPT);
 
     //forzamos el vaciado del buffer de salida
     fflush(stdout);
@@ -109,25 +106,22 @@ void imprimir_prompt() {
 }
 
 /*
-* Funcion: read_line()
-*------------------------
-*Devolverá un puntero a la línea leída
-*
+    Imprime el prompt y lee una linea de consola con la funcion fgets()
+    Parametros: line: Puntero (string) donde guardaremos la linea leida
+    Devuelve:   El puntero a la linea leida
 */
-
 char *read_line(char *line){
-imprimir_prompt();
- //fgets: Función que se encarga de leer o almacenar una cadena de caracteres introducida mediante el teclado.
- char *ptr = fgets(line,COMMAND_LINE_SIZE,stdin);
-  if (ptr) {
-        // Eliminamos el salto de línea (ASCII 10) sustituyéndolo por el \0
-        char *pos = strchr(line, 10);
+    imprimir_prompt();
+    //fgets: Función que se encarga de leer o almacenar una cadena de caracteres introducida mediante el teclado.
+    char *ptr = fgets(line,COMMAND_LINE_SIZE,stdin);
+    if (ptr) {    // Si fgets no devuelve null (no ha habido error ni end-of-file)
+        char *pos = strchr(line, '\n'); // Buscamos la primera ocurrencia de '\n'
         if (pos != NULL){
-            *pos = '\0';
-        } 
-	}  else {   //ptr==NULL 
+            *pos = '\0';    // Si ha encontrado '\n' lo systituye por '\0'
+        }
+    } else {   // Si fgets devuelve null (hay end-of-file o error de entrada)
         printf("\r");
-        if (feof(stdin)) { //se ha pulsado Ctrl+D
+        if (feof(stdin)) { // Si se ha pulsado Ctrl+D (end-of-file)
             fprintf(stderr,"Hasta la proxima, Adios!\n");
             exit(0);
         }   
@@ -137,63 +131,80 @@ imprimir_prompt();
 
 
 /*
-* Funcion: execute_line()
-*------------------------
-* 
+    Recibe la linea leida de stdin por parametro
+    Devuelve 0 si no ha habido error
 */
 int execute_line(char *line){
 
     char *args[ARGS_SIZE];
     pid_t pid, status;
-    char cwd[COMMAND_LINE_SIZE];
-    memset(cwd, '\0', sizeof(cwd)); 
-    strcpy(cwd, line);
+    char copiaLine[COMMAND_LINE_SIZE];  // Guardamos una copia de 'line' ya que parse_args la altera
+    strcpy(copiaLine, line);
 
     //obtener la linea fragmentada en tokens
     parse_args(args,line);
  
     //Si hay algo dentro de args mira si se trata de un comando interno
     if(args[0]){
-        check_internal(args);
+        int internal = check_internal(args);
 
-            if(check_internal(args) == 0){
-                pid=fork();
+        if(!internal){  // Si no es un comando interno (internal == 0)
+            pid=fork();
 
-                if(pid<0){// si PID <0 entonces ERROR
-                    perror("fork");
+            if(pid<0){// si PID < 0 entonces ERROR
+                perror(ROJO_T"Error fork"RESET_FORMATO);
+                exit(EXIT_FAILURE);
+            }
+            else if(pid==0){ //proceso hijo
+                if(execvp(args[0],args)<0){// Ejecuta el comando externo (si execvp < 0 entonces ERROR)
+                    fprintf(stderr,(ROJO_T"%s: no se encontró el comando \n"RESET_FORMATO,args[0]));
                     exit(EXIT_FAILURE);
                 }
-                else if(pid==0){ //proceso hijo
-                    if(execvp(args[0],args)<0){//si execvp < 0 entonces ERROR
-                        fprintf(stderr,"%s: no se encontró el comando \n",args[0]);
-                        exit(EXIT_FAILURE);
+            }
+            else{// Es el padre
+                //Actualizamos jobs_list
+                jobs_list[0].status='E';
+                strcpy(jobs_list[0].cmd, copiaLine);
+                #if DEBUGN3
+                    fprintf(stderr, GRIS_T"[execute_line()→PID del proceso padre: %d]\n"RESET_FORMATO, getpid());
+                    fprintf(stderr, GRIS_T"[execute_line()→PID del proceso hijo: %d]\n"RESET_FORMATO, pid);
+                    fprintf(stderr, GRIS_T"[execute_line()→Nombre del programa que actua como shell: %s]\n"RESET_FORMATO, mi_shell);
+                    fprintf(stderr, GRIS_T"[execute_line()→Comando del hijo en ejeccución en primer plano: %s]\n"RESET_FORMATO, jobs_list[0].cmd);
+                #endif
+                
+                int status;
+                waitpid(-1, &status, 0);  // Espera a que el proceso hijo acabe de ejecutar el comando
+                
+                #if DEBUGN3
+                    fprintf(stderr, GRIS_T"[execute_line()→El proceso hijo a finalizado ");
+                    if (WIFEXITED(status)){
+                        int estado = WEXITSTATUS(status);
+                        fprintf(stderr, GRIS_T"con exit(), estado = %d]\n"RESET_FORMATO, estado);
+                    } 
+                    else if(WIFSIGNALED(status)){
+                        int signal = WTERMSIG(status);
+                        fprintf(stderr, "por una señal de terminacion, Nº señal = %d]\n"RESET_FORMATO, signal);
                     }
-                }
-                else{//es el padre
-                    //Actualizamos jobs_list
-                    jobs_list[0].status='E';
-                    strcpy(jobs_list[0].cmd,cwd);
-                    //wait
-                    waitpid(-1, &status, 0);
-                    //reseteamos los datos
-                    char cwd[COMMAND_LINE_SIZE];
-                    char x ='\0';
-                    jobs_list[0].pid=0;
-                    jobs_list[0].status='N';
-                    // copiamos el caracter [x] a los primeros "COMMAND_LINE_SIZE" caracteres de cwd
-                    memset(cwd, x, COMMAND_LINE_SIZE);
-                }
-             }
+                #endif
+
+                //reseteamos los datos
+                jobs_list[0].pid=0;
+                jobs_list[0].status='N';
+                memset(jobs_list[0].cmd, '\0', COMMAND_LINE_SIZE);
+            }
+        }
     }else {
         return -1;
     }
         return 0;
 }
+
+
 /*
-* Funcion: parse_args()
-*------------------------
-* Muestra por pantalla el número de tokens y su valor para comprobar su correcto funcionamiento
-*
+    Argumentos: line: string de la linea leida de la linea de comandos
+                args: Puntero al que asignaremos el array args[]
+    Devuelve:   El numero de tokens (sin contar NULL)
+    Trocea la linea line en diferentes tokens y los guarda en un array de tokens args
 */
 int parse_args(char **args, char *line) {
     int i = 0;
@@ -202,11 +213,14 @@ int parse_args(char **args, char *line) {
     args[i] = strtok(line, " \t\n\r");
 
     // si args[i]!= NULL && *args[i]!='#' pasamos al siguiente token
-    while (args[i] && args[i][0] != '#') { 
+    while (args[i] && args[i][0] != '#') {
+        #if DEBUGN1
+            fprintf(stderr, GRIS_T"[parse_args()→token %d: %s]\n"RESET_FORMATO, i, args[i]);  // Mensaje de debug
+        #endif
         i++;
         args[i] = strtok(NULL, " \t\n\r");
-
     }
+
     //si el ultimo token no es NULL lo convertimos en NULL
     if (args[i]) {
         args[i] = NULL; // por si el último token es el símbolo comentario
@@ -215,11 +229,9 @@ int parse_args(char **args, char *line) {
 }
 
 /*
-*   Función: check_internal
-*   -----------------
-*   Comprobamos si args[] es un comando interno y llamamos a su respectivo en caso
-*   de serlo.
-*   
+    Comprobamos si args[] es un comando interno y llamamos a su funcion correspondiente en caso de serlo.
+    Parametros: args, el array de punteros a los tokens/argumentos
+    Devuelve:   0 si no es un comando interno, 1 si se ha ejecutado un comando interno
 */
 int check_internal(char **args) {
     if (strcmp(args[0], "cd")==0){
@@ -246,6 +258,12 @@ int check_internal(char **args) {
     return 0; // no es un comando interno
 }
 
+
+/*
+    Recibe el array de tokens por argumento
+    Cambia el directorio y la variable de entorno PWD dependiendo en los tokens
+    Devuelve 1 (TRUE) si ha ido bien y -1 si ha habido error
+*/
 int internal_cd(char **args) {
     // Obtenemos la ruta a la que cambiar a partir de los argumentos/tokens
     char* ruta;
@@ -329,14 +347,14 @@ int internal_cd(char **args) {
     #if DEBUGN2
         fprintf(stderr, GRIS_T"[Nuevo directorio actual: %s]\n", cwd);
     #endif
-    return 0;
+    return 1;
 } 
 
 
 /*
     Recibe el array de tokens por parametro
     Actualiza la variable y el valor especificados por args[1]
-    Devuelve 0 si ha ido bien y -1 si ha habido error
+    Devuelve 1 (TRUE) para indicar que es un comando interno o -1 si ha habido error
 */
 int internal_export(char **args) {
     char* nombre = strtok(args[1], "=");
@@ -358,9 +376,15 @@ int internal_export(char **args) {
     printf(GRIS_T"Nuevo valor de la variable de entorono %s: %s\n"RESET_FORMATO, nombre, getenv(nombre));
     #endif
 
-    return SUCCESS;
+    return 1;
 }
 
+
+/*
+    Recibe el array de tokens por parametro
+    Lee el fichero indicado en args[1] y ejecuta todas sus lineas
+    Devuelve 1 (TRUE) para indicar que es un comando interno o -1 si ha habido error
+*/
 int internal_source(char **args) {
     if (args[1] == NULL){
         perror(ROJO_T"Error de sintaxis. Usar la sintaxis \"source <nombre_fichero>\"");
@@ -386,7 +410,7 @@ int internal_source(char **args) {
     }
 
     fclose(fichero);  // Cerramos fichero
-    return(0);
+    return(1);
 }
 
 int internal_jobs(char **args) {

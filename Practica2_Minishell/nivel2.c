@@ -78,17 +78,15 @@ void imprimir_prompt() {
     //"%c"= imprime el caracter ASCII correspondiente
     printf(AMARILLO_T "%s" BLANCO_T "%c " RESET_FORMATO, getenv("PWD"), PROMPT);
 
-
     //forzamos el vaciado del buffer de salida
     fflush(stdout);
     return;
 }
 
 /*
-* Funcion: read_line()
-*------------------------
-*Devolverá un puntero a la línea leída
-*
+    Imprime el prompt y lee una linea de consola con la funcion fgets()
+    Parametros: line: Puntero (string) donde guardaremos la linea leida
+    Devuelve:   El puntero a la linea leida
 */
 char *read_line(char *line){
     imprimir_prompt();
@@ -102,12 +100,14 @@ char *read_line(char *line){
     } else {   // Si fgets devuelve null (hay end-of-file o error de entrada)
         printf("\r");
         if (feof(stdin)) { // Si se ha pulsado Ctrl+D (end-of-file)
-            fprintf(stderr,"\nHasta la proxima, Adios!\n");
+            fprintf(stderr,"Hasta la proxima, Adios!\n");
             exit(0);
         }   
     }
     return ptr;
 }
+
+
 /*
     Recibe la linea leida de stdin por parametro
     Devuelve 0 si no ha habido error
@@ -126,10 +126,10 @@ int execute_line(char *line){
 }
 
 /*
-* Funcion: parse_args()
-*------------------------
-* Muestra por pantalla el número de tokens y su valor para comprobar su correcto funcionamiento
-*
+    Argumentos: line: string de la linea leida de la linea de comandos
+                args: Puntero al que asignaremos el array args[]
+    Devuelve:   El numero de tokens (sin contar NULL)
+    Trocea la linea line en diferentes tokens y los guarda en un array de tokens args
 */
 int parse_args(char **args, char *line) {
     int i = 0;
@@ -154,11 +154,9 @@ int parse_args(char **args, char *line) {
 }
 
 /*
-*   Función: check_internal
-*   -----------------
-*   Comprobamos si args[] es un comando interno y llamamos a su respectivo en caso
-*   de serlo.
-*   
+    Comprobamos si args[] es un comando interno y llamamos a su funcion correspondiente en caso de serlo.
+    Parametros: args, el array de punteros a los tokens/argumentos
+    Devuelve:   0 si no es un comando interno, 1 si se ha ejecutado un comando interno
 */
 int check_internal(char **args) {
     if (strcmp(args[0], "cd")==0){
@@ -188,7 +186,7 @@ int check_internal(char **args) {
 /*
     Recibe el array de tokens por argumento
     Cambia el directorio y la variable de entorno PWD dependiendo en los tokens
-    Devuelve 0 si ha ido bien y -1 si ha habido error
+    Devuelve 1 (TRUE) si ha ido bien y -1 si ha habido error
 */
 int internal_cd(char **args) {
     // Obtenemos la ruta a la que cambiar a partir de los argumentos/tokens
@@ -273,13 +271,13 @@ int internal_cd(char **args) {
     #if DEBUGN2
         fprintf(stderr, GRIS_T"[Nuevo directorio actual: %s]\n", cwd);
     #endif
-    return 0;
+    return 1;
 } 
 
 /*
     Recibe el array de tokens por parametro
     Actualiza la variable y el valor especificados por args[1]
-    Devuelve 0 si ha ido bien y -1 si ha habido error
+    Devuelve 1 (TRUE) para indicar que es un comando interno o -1 si ha habido error
 */
 int internal_export(char **args) {
     char* nombre = strtok(args[1], "=");
@@ -301,7 +299,7 @@ int internal_export(char **args) {
     printf(GRIS_T"Nuevo valor de la variable de entorono %s: %s\n"RESET_FORMATO, nombre, getenv(nombre));
     #endif
 
-    return SUCCESS;
+    return 1;
 }
 
 int internal_source(char **args) {

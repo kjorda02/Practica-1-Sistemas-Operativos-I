@@ -81,10 +81,9 @@ void imprimir_prompt() {
 }
 
 /*
-* Funcion: read_line()
-*------------------------
-*Devolverá un puntero a la línea leída
-*
+    Imprime el prompt y lee una linea de consola con la funcion fgets()
+    Parametros: line: Puntero (string) donde guardaremos la linea leida
+    Devuelve:   El puntero a la linea leida
 */
 char *read_line(char *line){
     imprimir_prompt();
@@ -104,12 +103,13 @@ char *read_line(char *line){
     }
     return ptr;
 }
+
+
 /*
     Recibe la linea leida de stdin por parametro
     Devuelve 0 si no ha habido error
 */
 int execute_line(char *line){
-
     char* args[ARGS_SIZE];
     parse_args(args,line);  //obtener la linea fragmentada en tokens
  
@@ -122,10 +122,10 @@ int execute_line(char *line){
 }
 
 /*
-* Funcion: parse_args()
-*------------------------
-* Muestra por pantalla el número de tokens y su valor para comprobar su correcto funcionamiento
-*
+    Argumentos: line: string de la linea leida de la linea de comandos
+                args: Puntero al que asignaremos el array args[]
+    Devuelve:   El numero de tokens (sin contar NULL)
+    Trocea la linea line en diferentes tokens y los guarda en un array de tokens args
 */
 int parse_args(char **args, char *line) {
     int i = 0;
@@ -150,11 +150,9 @@ int parse_args(char **args, char *line) {
 }
 
 /*
-*   Función: check_internal
-*   -----------------
-*   Comprobamos si args[] es un comando interno y llamamos a su respectivo en caso
-*   de serlo.
-*   
+    Comprobamos si args[] es un comando interno y llamamos a su funcion correspondiente en caso de serlo.
+    Parametros: args, el array de punteros a los tokens/argumentos
+    Devuelve:   0 si no es un comando interno, 1 si se ha ejecutado un comando interno
 */
 int check_internal(char **args) {
     if (strcmp(args[0], "cd")==0){
@@ -165,10 +163,10 @@ int check_internal(char **args) {
     }
     if (strcmp(args[0], "source")==0){
         return internal_source(args);
-        }
+    }
     if (strcmp(args[0], "jobs")==0){
         return internal_jobs(args);
-        }
+    }
     if (strcmp(args[0], "fg")==0){
         return internal_fg(args);
     }
@@ -178,6 +176,7 @@ int check_internal(char **args) {
     if (strcmp(args[0], "exit")==0){
         exit(0);
     }
+    
     return 0; // no es un comando interno
 }
 
