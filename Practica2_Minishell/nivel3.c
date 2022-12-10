@@ -12,6 +12,8 @@
 //DIRECTIVAS PARA EL PREPROCESADOR
 #define _POSIX_C_SOURCE 200112L
 #define DEBUGN3 1
+#define DEBUGN2 0
+#define DEBUGN1 0
 
 #define RESET_FORMATO "\x1b[0m"
 #define NEGRO_T "\x1b[30m"
@@ -165,6 +167,7 @@ int execute_line(char *line){
                 //Actualizamos jobs_list
                 jobs_list[0].status='E';
                 strcpy(jobs_list[0].cmd, copiaLine);
+                jobs_list[0].pid=pid;
                 #if DEBUGN3
                     fprintf(stderr, GRIS_T"[execute_line()→PID del proceso padre: %d]\n"RESET_FORMATO, getpid());
                     fprintf(stderr, GRIS_T"[execute_line()→PID del proceso hijo: %d]\n"RESET_FORMATO, pid);
