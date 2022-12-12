@@ -473,9 +473,12 @@ void reaper(int signum){
     Mata al proceso en primer plano si hay uno y no es otro minishell
 */
 void ctrlc (int signum){
+    char debugCtrlC[1200];
 	signal(SIGINT, ctrlc);  // ASOCIAMOS LA SEÑAL SIGINT A CTRLC (por si se restaura)
+
     #if DEBUGN4
-        fprintf(stderr, GRIS_T "[ctrlc()--> Soy el proceso con PID %d (%s), el proceso foreground es %d (%s)]\n" RESET_FORMATO, getpid(), mi_shell, jobs_list[0].pid, jobs_list[0].cmd);
+        sprintf(debugCtrlC, GRIS_T "\n[ctrlc()--> Soy el proceso con PID %d (%s), el proceso foreground es %d (%s)]\n" RESET_FORMATO, getpid(), mi_shell, jobs_list[0].pid, jobs_list[0].cmd);
+        write(2, debugCtrlC, strlen(debugCtrlC));
     #endif
 
 	if(jobs_list[0].pid > 0){   // REVISAMOS SI HAY UN PROCESO EN FOREGROUND
@@ -483,25 +486,26 @@ void ctrlc (int signum){
 			
 			if(kill(jobs_list[0].pid,SIGTERM)==0){  // Enviar señal SIGTERM al proceso en foreground
 			    #if DEBUGN4
-			        fprintf(stderr, GRIS_T "[ctrlc()--> Señal SIGTERM enviada a %d (%s) por %d (%s)]\n" RESET_FORMATO, jobs_list[0].pid, jobs_list[0].cmd, getpid(), mi_shell);
+			        sprintf(debugCtrlC, GRIS_T "[ctrlc()--> Señal SIGTERM enviada a %d (%s) por %d (%s)]\n" RESET_FORMATO, jobs_list[0].pid, jobs_list[0].cmd, getpid(), mi_shell);
+                    write(2, debugCtrlC, strlen(debugCtrlC));
 			    #endif
 			}
             else{
-                #if DEBUGN4
-                fprintf(stderr, ROJO_T "[ctrlc()--> Error al enviar la señal SIGTERM a %d (%s) por %d (%s)]\n" RESET_FORMATO, jobs_list[0].pid, jobs_list[0].cmd, getpid(), mi_shell);
-                #endif
+                sprintf(debugCtrlC, ROJO_T "ctrlc()--> Error al enviar la señal SIGTERM a %d (%s) por %d (%s)\n" RESET_FORMATO, jobs_list[0].pid, jobs_list[0].cmd, getpid(), mi_shell);
+                write(2, debugCtrlC, strlen(debugCtrlC));
 			}
 		}
 		else{
             #if DEBUGN4
-			fprintf(stderr, GRIS_T "[ctrlc()--> Señal SIGTERM no enviada debido a que el proceso en foreground es el shell]\n" RESET_FORMATO);
-			fflush(stdout); // forzamos el vaciado de buffer
+			sprintf(debugCtrlC, GRIS_T "[ctrlc()--> Señal SIGTERM no enviada debido a que el proceso en foreground es el shell]\n" RESET_FORMATO);
+            write(2, debugCtrlC, strlen(debugCtrlC));
             #endif
 		}
     }
     else{
         #if DEBUGN4
-		fprintf(stderr, GRIS_T "[ctrlc()--> Señal SIGTERM no enviada debido a que no hay proceso en foreground]\n" RESET_FORMATO);
+		sprintf(debugCtrlC, GRIS_T "[ctrlc()--> Señal SIGTERM no enviada debido a que no hay proceso en foreground]\n" RESET_FORMATO);
+        write(2, debugCtrlC, strlen(debugCtrlC));
         #endif
 		imprimir_prompt();
 	}
