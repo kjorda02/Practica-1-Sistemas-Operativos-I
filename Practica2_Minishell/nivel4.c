@@ -181,11 +181,9 @@ int execute_line(char *line){
                 strcpy(jobs_list[0].cmd, copiaLine);
                 jobs_list[0].pid=pid;
 
-                #if DEBUGN3
-                    fprintf(stderr, GRIS_T"[execute_line()→PID del proceso padre: %d]\n"RESET_FORMATO, getpid());
-                    fprintf(stderr, GRIS_T"[execute_line()→PID del proceso hijo: %d]\n"RESET_FORMATO, pid);
-                    fprintf(stderr, GRIS_T"[execute_line()→Nombre del programa que actua como shell: %s]\n"RESET_FORMATO, mi_shell);
-                    fprintf(stderr, GRIS_T"[execute_line()→Comando del hijo en ejeccución en primer plano: %s]\n"RESET_FORMATO, jobs_list[0].cmd);
+                #if DEBUGN4
+                    fprintf(stderr, GRIS_T"[execute_line()→PID del proceso padre: %d (%s)]\n"RESET_FORMATO, getpid(), mi_shell);
+                    fprintf(stderr, GRIS_T"[execute_line()→PID del proceso hijo: %d (%s)]\n"RESET_FORMATO, pid, jobs_list[0].cmd);
                 #endif
 
                 // Mientras exista proceso en primer plano, espera a una señal 
@@ -442,16 +440,20 @@ int internal_bg(char **args) {
 */
 void reaper(int signum){
     signal(SIGCHLD, reaper);    // Volvemos a asociar la señal SIGCHLD al reaper (por si se restaura)
+
+    printf("\n");
+    fflush(stdout);
+
     int status;
     int ended;
     ended=waitpid(-1, &status, WNOHANG);
     while (ended > 0) {
         if (ended == jobs_list[0].pid){  // Si el proceso que ha finalizado era el que estaba en primer plano resteamos jobs_list[0]
             #if DEBUGN4
-                fprintf(stderr, GRIS_T"[reaper()--> Hijo con PID %d finalizado ", jobs_list[0].pid);
+                fprintf(stderr, GRIS_T"[reaper()--> Hijo con PID %d (%s) finalizado ", jobs_list[0].pid, jobs_list[0].cmd);
                 if (WIFEXITED(status)){
                     int estado = WEXITSTATUS(status);
-                    fprintf(stderr, "con exit(), estado = %d]\n"RESET_FORMATO, estado);
+                    fprintf(stderr, "con exit status estado = %d]\n"RESET_FORMATO, estado);
                 } 
                 else if(WIFSIGNALED(status)){
                     int signal = WTERMSIG(status);
@@ -476,8 +478,11 @@ void ctrlc (int signum){
     char debugCtrlC[1200];
 	signal(SIGINT, ctrlc);  // ASOCIAMOS LA SEÑAL SIGINT A CTRLC (por si se restaura)
 
+    printf("\n");
+    fflush(stdout);
+
     #if DEBUGN4
-        sprintf(debugCtrlC, GRIS_T "\n[ctrlc()--> Soy el proceso con PID %d (%s), el proceso foreground es %d (%s)]\n" RESET_FORMATO, getpid(), mi_shell, jobs_list[0].pid, jobs_list[0].cmd);
+        sprintf(debugCtrlC, GRIS_T "[ctrlc()--> Soy el proceso con PID %d (%s), el proceso foreground es %d (%s)]\n" RESET_FORMATO, getpid(), mi_shell, jobs_list[0].pid, jobs_list[0].cmd);
         write(2, debugCtrlC, strlen(debugCtrlC));
     #endif
 
@@ -507,6 +512,5 @@ void ctrlc (int signum){
 		sprintf(debugCtrlC, GRIS_T "[ctrlc()--> Señal SIGTERM no enviada debido a que no hay proceso en foreground]\n" RESET_FORMATO);
         write(2, debugCtrlC, strlen(debugCtrlC));
         #endif
-		imprimir_prompt();
 	}
 }
