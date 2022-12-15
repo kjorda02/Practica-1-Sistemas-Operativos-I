@@ -159,7 +159,7 @@ int execute_line(char *line){
             }
             else if(pid==0){ //proceso hijo
                 if(execvp(args[0],args)<0){// Ejecuta el comando externo (si execvp < 0 entonces ERROR)
-                    fprintf(stderr,(ROJO_T"%s: no se encontró el comando \n"RESET_FORMATO,args[0]));
+                    fprintf(stderr,ROJO_T"%s: no se encontró el comando \n"RESET_FORMATO,args[0]);
                     exit(EXIT_FAILURE);
                 }
             }
