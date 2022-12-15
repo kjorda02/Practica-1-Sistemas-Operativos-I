@@ -11,6 +11,7 @@
 
 //DIRECTIVAS PARA EL PREPROCESADOR
 #define _POSIX_C_SOURCE 200112L
+#define DEBUGN6 1
 #define DEBUGN5 1
 #define DEBUGN4 0
 #define DEBUGN3 0
@@ -95,7 +96,7 @@ int main(int argc, char *argv[]){
     memset(jobs_list[0].cmd, '\0', COMMAND_LINE_SIZE);
     signal(SIGCHLD, reaper);    // llamada al enterrador de zombies cuando un hijo acaba (señal SIGCHLD)
     signal(SIGINT, ctrlc);      // SIGINT es la señal de interrupcion que produce Ctrl+C
-     signal (SIGTSTP, ctrlz);   // SIGTSTP es la señal de interrupcion que produce Ctrl+z
+    signal(SIGTSTP, ctrlz);     // SIGTSTP es la señal de interrupcion que produce Ctrl+z
 
     strcpy(mi_shell, argv[0]);   //Obtenemos el comando de ejecución del minishell y lo guardamos en "mi_shell"
 
@@ -112,7 +113,7 @@ void imprimir_prompt() {
     //"%c"= imprime el caracter ASCII correspondiente
     printf(AMARILLO_T "%s" BLANCO_T "%c " RESET_FORMATO, getenv("PWD"), PROMPT);
 
-    //forzamos el vaciado del buffer de salida
+    //forzamos el vaciado del buffer de salida (Es necesario dado que no hemos imprimido \n)
     fflush(stdout);
     return;
 }
@@ -129,14 +130,14 @@ char *read_line(char *line){
     if (ptr) {    // Si fgets no devuelve null (no ha habido error ni end-of-file)
         char *pos = strchr(line, '\n'); // Buscamos la primera ocurrencia de '\n'
         if (pos != NULL){
-            *pos = '\0';    // Si ha encontrado '\n' lo systituye por '\0'
+            *pos = '\0';    // Si ha encontrado '\n' lo sustituye por '\0'
         }
     } else {   // Si fgets devuelve null (hay end-of-file o error de entrada)
         printf("\r");
         if (feof(stdin)) { // Si se ha pulsado Ctrl+D (end-of-file)
             fprintf(stderr,"Hasta la proxima, Adios!\n");
             exit(0);
-        }   
+        }
     }
     return ptr;
 }
@@ -149,7 +150,7 @@ char *read_line(char *line){
 int execute_line(char *line){
 
     char *args[ARGS_SIZE];
-    pid_t pid, status;
+    pid_t pid;
     char copiaLine[COMMAND_LINE_SIZE];  // Guardamos una copia de 'line' ya que parse_args la altera
     strcpy(copiaLine, line);
 
@@ -177,7 +178,7 @@ int execute_line(char *line){
                 signal(SIGTSTP, SIG_IGN);	// INGNORAR LA SEÑAL SIGINT 
 
                 if(execvp(args[0],args)<0){// Ejecuta el comando externo (si execvp < 0 entonces ERROR)
-                    fprintf(stderr,(ROJO_T"%s: no se encontró el comando \n"RESET_FORMATO,args[0]));
+                    fprintf(stderr,ROJO_T"%s: no se encontró el comando \n"RESET_FORMATO,args[0]);
                     exit(EXIT_FAILURE);
                 }
             }
@@ -432,6 +433,11 @@ int internal_source(char **args) {
     return(1);
 }
 
+/*
+  Recibe el array de argumentos por parametro
+  Muestra una lista de trabajos en segundo plano
+  Devuelve 1 para indicar que es un comando interno  
+*/
 int internal_jobs(char **args) {
     for (int i = 1; i <= n_pids; i++){
         printf("[%d] %d\t%c\t%s\n", i, jobs_list[i].pid, jobs_list[i].status, jobs_list[i].cmd);
@@ -439,17 +445,88 @@ int internal_jobs(char **args) {
     return 1;
 }
 
+/*
+    Recibe el array de argumentos por parametro
+    Pasa el trabajo indicado a primer plano
+    Devuelve 1 para indicar que es un comando interno
+*/
 int internal_fg(char **args) {
-    #if DEBUGN1 
-        printf("[internal_fg()→ Esta función enviará un trabajo detenido al foreground reactivando su ejecución, o uno del background al foreground ]\n");
-    #endif
+    if (!args[1] || args[2]){  // Si el primer argumento no es null o si hay 2 argumentos (no hay segfault porque no comprueba la segunda condicion si la primera es 1)
+        fprintf(stderr, ROJO_T "Error de sintaxis. Usa 'fg <Nº trabajo>'\n" RESET_FORMATO);
+        return 1;
+    }
+
+    int pos = atoi(args[1]);
+    if ((pos == 0) || (pos > n_pids)){  // Si el primer argumento no es un numero o si es el numero 0 o si es un numero mayor que la posicion del ultimo trabajo
+        fprintf(stderr, ROJO_T "Error: No se ha encontrado el trabajo '%s'\n" RESET_FORMATO, args[1]);
+        return 1;
+    }
+
+    if (jobs_list[pos].status == 'D'){  // Si el estatus es detenido enviar la señal SIGCONT para que se reanude el proceso hijo
+        kill(jobs_list[pos].pid, SIGCONT);
+        #if DEBUGN6
+            fprintf(stderr, GRIS_T"[internal_fg()--> Enviada la señal SIGCONT al trabajo %d con pid %d (%s)]\n" RESET_FORMATO, pos, jobs_list[pos].pid, jobs_list[pos].cmd);
+        #endif
+    }
+
+    char* ampersand = strchr(jobs_list[pos].cmd, '&');
+    if (ampersand){
+        *(ampersand - 1) = '\0'; // Eliminamos la posicon anterior porque siempre habra un espacio antes del &
+    }
+
+    // Copiar datos
+    jobs_list[0].pid = jobs_list[pos].pid;
+    jobs_list[0].status = 'E';
+    strcpy(jobs_list[0].cmd, jobs_list[pos].cmd);
+
+    jobs_list_remove(pos);
+    
+    printf("%s\n", jobs_list[0].cmd);
+    
+
+    while (jobs_list[0].pid > 0){   // Esperamos a que el proceso acabe y el reaper resetee jobs_list[0]
+        pause();
+    }
     return 1;
 }
 
+/*
+    Recibe el array de argumentos por parametro
+    Reanuda el proceso en segundo plano indicado
+    Devuelve 1 para indicar que es un comando interno
+*/
 int internal_bg(char **args) {
-    #if DEBUGN1 
-        printf("[internal_bg()→ Esta función reactivará un proceso detenido para que siga ejecutándose pero en segundo plano]\n");
+    if (!args[1] || args[2]){  // Si el primer argumento no es null o si hay 2 argumentos (no hay segfault porque no comprueba la segunda condicion si la primera es 1)
+        fprintf(stderr, ROJO_T "Error de sintaxis. Usa 'bg <Nº trabajo>'\n" RESET_FORMATO);
+        return 1;
+    }
+
+    int pos = atoi(args[1]);
+    if ((pos == 0) || (pos > n_pids)){  // Si el primer argumento no es un numero o si es el numero 0 o si es un numero mayor que la posicion del ultimo trabajo
+        fprintf(stderr, ROJO_T "Error: No se ha encontrado el trabajo '%s'\n" RESET_FORMATO, args[1]);
+        return 1;
+    }
+
+    if (jobs_list[pos].status == 'E'){
+        fprintf(stderr, ROJO_T "Error: el trabajo %d ya esta ejecuntandose en 2º plano\n" RESET_FORMATO, pos);
+        return 1;
+    }
+
+    //Cambiar el status de ese trabajo a 'E' (ejecutandose)
+    jobs_list[pos].status = 'E';
+
+    //añadimos con strcat el bloque " &"
+    strcat(jobs_list[pos].cmd, " &");  
+
+    //Enviar la señal SIGCONT a jobs_list[pos].pid
+    kill(jobs_list[pos].pid,SIGCONT);
+
+    #if DEBUGN6
+        fprintf(stderr, GRIS_T"[internal_bg()--> Enviada la señal SIGCONT al trabajo %d con pid %d (%s)]\n" RESET_FORMATO, pos, jobs_list[pos].pid, jobs_list[pos].cmd);
     #endif
+    
+    printf("[%d] %d\t%c\t%s\n", pos, jobs_list[pos].pid, jobs_list[pos].status, jobs_list[pos].cmd);
+
     return 1;
 }
 
@@ -461,9 +538,6 @@ int internal_bg(char **args) {
 */
 void reaper(int signum){
     signal(SIGCHLD, reaper);    // Volvemos a asociar la señal SIGCHLD al reaper (por si se restaura)
-
-    printf("\n");
-    fflush(stdout);
 
     int status;
     int ended;
@@ -480,11 +554,15 @@ void reaper(int signum){
         else{  // Si el proceso que ha finalizado era de segundo plano / parado reseteamos jobs_list[indice]
             int indice = jobs_list_find(ended);
             
-            if (WIFEXITED(status)){  // Solo informar de que acaba un proceso si ha acabado por su cuenta (no lo hemos matado)
+            printf("\nTerminado PID %d (%s) en jobs_list[%d] ", jobs_list[indice].pid, jobs_list[indice].cmd, indice);
+            if (WIFEXITED(status)){
                 int estado = WEXITSTATUS(status);
-                printf("Terminado PID %d (%s) en jobs_list[%d] con exit status %d\n", jobs_list[indice].pid, jobs_list[indice].cmd, indice, estado);
-                fflush(stdout);
+                printf("con exit status %d\n"RESET_FORMATO, estado);
             } 
+            else if(WIFSIGNALED(status)){
+                int signal = WTERMSIG(status);
+                printf("por la señal %d\n"RESET_FORMATO, signal);
+            }
 
             #if DEBUGN5
                 fprintf(stderr, GRIS_T"[reaper()--> Hijo en segundo plano con pid %d (%s) finalizado ", jobs_list[indice].pid, jobs_list[indice].cmd);
@@ -514,11 +592,10 @@ void reaper(int signum){
     Mata al proceso en primer plano si hay uno y no es otro minishell
 */
 void ctrlc (int signum){
-    char debugCtrlC[1200];
+    char debugCtrlC[4096];
 	signal(SIGINT, ctrlc);  // ASOCIAMOS LA SEÑAL SIGINT A CTRLC (por si se restaura)
     
     printf("\n");
-    fflush(stdout);
 
     #if DEBUGN5
         sprintf(debugCtrlC, GRIS_T "[ctrlc()--> Soy el proceso con PID %d (%s), el proceso foreground es %d (%s)]\n" RESET_FORMATO, getpid(), mi_shell, jobs_list[0].pid, jobs_list[0].cmd);
@@ -610,16 +687,22 @@ int  jobs_list_remove(int pos){
         jobs_list[pos].status = jobs_list[n_pids].status;
         strcpy(jobs_list[pos].cmd, jobs_list[n_pids].cmd);
         n_pids--;
+        return 0;
     }
+    return -1;
 }
 
 
 void ctrlz(int signum){
-    char debugCtrlZ[1200];
+    char debugCtrlZ[4096];
     signal(SIGTSTP, ctrlz);  // ASOCIAMOS LA SEÑAL SIGINT A CTRLC (por si se restaura)
 
     printf("\n");
-    fflush(stdout);
+
+    #if DEBUGN5
+        sprintf(debugCtrlZ, GRIS_T "[ctrlz()--> Soy el proceso con PID %d (%s), el proceso foreground es %d (%s)]\n" RESET_FORMATO, getpid(), mi_shell, jobs_list[0].pid, jobs_list[0].cmd);
+        write(2, debugCtrlZ, strlen(debugCtrlZ));
+    #endif
 
     if (jobs_list[0].pid > 0){  // Si hay un proceso en foreground
         if (strcmp(jobs_list[0].cmd, mi_shell) != 0){  // Si no es otro minishell
@@ -650,7 +733,7 @@ void ctrlz(int signum){
     }
     else{   // Si no hay proceso en foreground
         #if DEBUGN5
-		    sprintf(debugCtrlZ, GRIS_T "\n[ctrlz()--> Señal SIGSTOP no enviada debido a que no hay proceso en foreground]\n" RESET_FORMATO);
+		    sprintf(debugCtrlZ, GRIS_T "[ctrlz()--> Señal SIGSTOP no enviada debido a que no hay proceso en foreground]\n" RESET_FORMATO);
             write(2, debugCtrlZ, strlen(debugCtrlZ));
         #endif
     }

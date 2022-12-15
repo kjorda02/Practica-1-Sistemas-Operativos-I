@@ -102,7 +102,7 @@ void imprimir_prompt() {
     //"%c"= imprime el caracter ASCII correspondiente
     printf(AMARILLO_T "%s" BLANCO_T "%c " RESET_FORMATO, getenv("PWD"), PROMPT);
 
-    //forzamos el vaciado del buffer de salida
+    //forzamos el vaciado del buffer de salida (Es necesario dado que no hemos imprimido \n)
     fflush(stdout);
     return;
 }
@@ -119,7 +119,7 @@ char *read_line(char *line){
     if (ptr) {    // Si fgets no devuelve null (no ha habido error ni end-of-file)
         char *pos = strchr(line, '\n'); // Buscamos la primera ocurrencia de '\n'
         if (pos != NULL){
-            *pos = '\0';    // Si ha encontrado '\n' lo systituye por '\0'
+            *pos = '\0';    // Si ha encontrado '\n' lo sustituye por '\0'
         }
     } else {   // Si fgets devuelve null (hay end-of-file o error de entrada)
         printf("\r");
@@ -139,7 +139,7 @@ char *read_line(char *line){
 int execute_line(char *line){
 
     char *args[ARGS_SIZE];
-    pid_t pid, status;
+    pid_t pid;
     char copiaLine[COMMAND_LINE_SIZE];  // Guardamos una copia de 'line' ya que parse_args la altera
     strcpy(copiaLine, line);
 
@@ -159,7 +159,7 @@ int execute_line(char *line){
             }
             else if(pid==0){ //proceso hijo
                 if(execvp(args[0],args)<0){// Ejecuta el comando externo (si execvp < 0 entonces ERROR)
-                    fprintf(stderr,(ROJO_T"%s: no se encontró el comando \n"RESET_FORMATO,args[0]));
+                    fprintf(stderr,ROJO_T"%s: no se encontró el comando \n"RESET_FORMATO,args[0]);
                     exit(EXIT_FAILURE);
                 }
             }

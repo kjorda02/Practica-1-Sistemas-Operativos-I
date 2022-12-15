@@ -78,7 +78,7 @@ void imprimir_prompt() {
     //"%c"= imprime el caracter ASCII correspondiente
     printf(AMARILLO_T "%s" BLANCO_T "%c " RESET_FORMATO, getenv("PWD"), PROMPT);
 
-    //forzamos el vaciado del buffer de salida
+    //forzamos el vaciado del buffer de salida (Es necesario dado que no hemos imprimido \n)
     fflush(stdout);
     return;
 }
@@ -95,7 +95,7 @@ char *read_line(char *line){
     if (ptr) {    // Si fgets no devuelve null (no ha habido error ni end-of-file)
         char *pos = strchr(line, '\n'); // Buscamos la primera ocurrencia de '\n'
         if (pos != NULL){
-            *pos = '\0';    // Si ha encontrado '\n' lo systituye por '\0'
+            *pos = '\0';    // Si ha encontrado '\n' lo sustituye por '\0'
         }
     } else {   // Si fgets devuelve null (hay end-of-file o error de entrada)
         printf("\r");

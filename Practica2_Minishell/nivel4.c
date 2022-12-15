@@ -105,7 +105,7 @@ void imprimir_prompt() {
     //"%c"= imprime el caracter ASCII correspondiente
     printf(AMARILLO_T "%s" BLANCO_T "%c " RESET_FORMATO, getenv("PWD"), PROMPT);
 
-    //forzamos el vaciado del buffer de salida
+    //forzamos el vaciado del buffer de salida (Es necesario dado que no hemos imprimido \n)
     fflush(stdout);
     return;
 }
@@ -122,7 +122,7 @@ char *read_line(char *line){
     if (ptr) {    // Si fgets no devuelve null (no ha habido error ni end-of-file)
         char *pos = strchr(line, '\n'); // Buscamos la primera ocurrencia de '\n'
         if (pos != NULL){
-            *pos = '\0';    // Si ha encontrado '\n' lo systituye por '\0'
+            *pos = '\0';    // Si ha encontrado '\n' lo sustituye por '\0'
         }
     } else {   // Si fgets devuelve null (hay end-of-file o error de entrada)
         printf("\r");
@@ -142,7 +142,7 @@ char *read_line(char *line){
 int execute_line(char *line){
 
     char *args[ARGS_SIZE];
-    pid_t pid, status;
+    pid_t pid;
     char copiaLine[COMMAND_LINE_SIZE];  // Guardamos una copia de 'line' ya que parse_args la altera
     strcpy(copiaLine, line);
 
@@ -166,7 +166,7 @@ int execute_line(char *line){
                 signal(SIGINT, SIG_IGN);	// INGNORAR LA SEÑAL SIGINT
 
                 if(execvp(args[0],args)<0){// Ejecuta el comando externo (si execvp < 0 entonces ERROR)
-                    fprintf(stderr,(ROJO_T"%s: no se encontró el comando \n"RESET_FORMATO,args[0]));
+                    fprintf(stderr,ROJO_T"%s: no se encontró el comando \n"RESET_FORMATO,args[0]);
                     exit(EXIT_FAILURE);
                 }
             }
@@ -441,9 +441,6 @@ int internal_bg(char **args) {
 void reaper(int signum){
     signal(SIGCHLD, reaper);    // Volvemos a asociar la señal SIGCHLD al reaper (por si se restaura)
 
-    printf("\n");
-    fflush(stdout);
-
     int status;
     int ended;
     ended=waitpid(-1, &status, WNOHANG);
@@ -475,11 +472,10 @@ void reaper(int signum){
     Mata al proceso en primer plano si hay uno y no es otro minishell
 */
 void ctrlc (int signum){
-    char debugCtrlC[1200];
+    char debugCtrlC[4096];
 	signal(SIGINT, ctrlc);  // ASOCIAMOS LA SEÑAL SIGINT A CTRLC (por si se restaura)
 
     printf("\n");
-    fflush(stdout);
 
     #if DEBUGN4
         sprintf(debugCtrlC, GRIS_T "[ctrlc()--> Soy el proceso con PID %d (%s), el proceso foreground es %d (%s)]\n" RESET_FORMATO, getpid(), mi_shell, jobs_list[0].pid, jobs_list[0].cmd);
