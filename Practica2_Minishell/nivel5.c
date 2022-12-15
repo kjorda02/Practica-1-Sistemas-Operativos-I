@@ -177,7 +177,7 @@ int execute_line(char *line){
                 signal(SIGTSTP, SIG_IGN);	// INGNORAR LA SEÑAL SIGINT 
 
                 if(execvp(args[0],args)<0){// Ejecuta el comando externo (si execvp < 0 entonces ERROR)
-                    fprintf(stderr,(ROJO_T"%s: no se encontró el comando \n"RESET_FORMATO,args[0]));
+                    fprintf(stderr,ROJO_T"%s: no se encontró el comando \n"RESET_FORMATO,args[0]);
                     exit(EXIT_FAILURE);
                 }
             }
