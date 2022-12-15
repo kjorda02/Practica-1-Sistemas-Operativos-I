@@ -139,7 +139,7 @@ char *read_line(char *line){
 int execute_line(char *line){
 
     char *args[ARGS_SIZE];
-    pid_t pid, status;
+    pid_t pid;
     char copiaLine[COMMAND_LINE_SIZE];  // Guardamos una copia de 'line' ya que parse_args la altera
     strcpy(copiaLine, line);
 
