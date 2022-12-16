@@ -11,7 +11,6 @@
 
 //DIRECTIVAS PARA EL PREPROCESADOR
 #define _POSIX_C_SOURCE 200112L
-#define DEBUGN1 0
 #define DEBUGN2 1
 #define FAILURE -1
 #define SUCCESS 0
@@ -139,9 +138,6 @@ int parse_args(char **args, char *line) {
 
     // si args[i]!= NULL && *args[i]!='#' pasamos al siguiente token
     while (args[i] && args[i][0] != '#') {
-        #if DEBUGN1
-            fprintf(stderr, GRIS_T"[parse_args()→token %d: %s]\n"RESET_FORMATO, i, args[i]);  // Mensaje de debug
-        #endif
         i++;
         args[i] = strtok(NULL, " \t\n\r");
     }
@@ -181,6 +177,44 @@ int check_internal(char **args) {
         exit(0);
     }
     return 0; // no es un comando interno
+}
+
+char* buscarComilla(char* token){
+    char* comilla = strchr(token, '"');
+
+    while(comilla && (comilla != token) && (*(comilla - 1) == '\\')){
+        *(comilla - 1) = '\0';
+        char aux[COMMAND_LINE_SIZE];
+        strcpy(aux, comilla);
+        strcat(token, aux);
+        comilla = strchr(comilla, '"');
+    }
+
+    return comilla;
+}
+
+int buscarBackslash(char* token){  // Comprueba si el ultimo caracter del token es '\', si hay 2 backslash se cancelan
+    char* fin = strchr(token, '\0');
+
+    // Eliminar secuencias de "\\" (2 backslash seguidos), quitando el primer '\'
+    for (char* i = (fin - 1); i > token; i--){  // Recorremos el token desde el utimo caracter hacia el principio
+        if (*i == '\\' && *(i - 1) == '\\'){  // Si encuentra un '\' precedido de otro '\', elimina el primer '\'
+            *(i - 1) = '\0';
+            char aux[COMMAND_LINE_SIZE];
+            strcpy(aux, i);
+            strcat(token, aux);
+            i--; // Hay que decrementar el contador ya que hemos eliminado un '\'
+        }
+    }
+
+    fin = strchr(token, '\0');
+    if ((fin > token) && *(fin - 1) == '\\'){
+        *(fin - 1) = '\0';
+        return 1;
+    }
+    else{
+        return 0;
+    }
 }
 
 /*
@@ -245,31 +279,30 @@ int internal_cd(char **args) {
             }
         }
         ruta = str;
-        printf("Ruta: |%s|\n", ruta);
     }
 
     // Cambiamos la ruta
     if (chdir(ruta)){  // Llama a chdir() para cambiar de ruta y si no devuelve 0 informa del error
-        perror(ROJO_T"Error de chdir() al cambiar de ruta"RESET_FORMATO);
+        perror(ROJO_T"internal_cd()--> Error de chdir() al cambiar de ruta"RESET_FORMATO);
         return FAILURE;
     }
 
     // Obtener el nuevo 'current working directory' con getcwd()
     char cwd[COMMAND_LINE_SIZE];
     if (getcwd(cwd, COMMAND_LINE_SIZE) == NULL){  // Llama a getcwd() y si devuelve NULL informa del error
-        perror(ROJO_T"Error de getcwd()\n"RESET_FORMATO);
+        perror(ROJO_T"internal_cd()--> Error de getcwd()\n"RESET_FORMATO);
         return FAILURE;
     }
 
     // Actualizamos la variable de entorno PWD
     if (setenv("PWD", cwd, 1)){
-        perror(ROJO_T"Error de setenv() al actualizar la variable de entorno PWD"RESET_FORMATO);
+        perror(ROJO_T"internal_cd()--> Error de setenv() al actualizar la variable de entorno PWD"RESET_FORMATO);
         return FAILURE;
     }
 
     // Mensaje de debug
     #if DEBUGN2
-        fprintf(stderr, GRIS_T"[Nuevo directorio actual: %s]\n", cwd);
+        fprintf(stderr, GRIS_T"[internal_cd()--> Nuevo directorio actual: %s]\n", cwd);
     #endif
     return 1;
 } 
@@ -280,51 +313,56 @@ int internal_cd(char **args) {
     Devuelve 1 (TRUE) para indicar que es un comando interno o -1 si ha habido error
 */
 int internal_export(char **args) {
+    if (args[1] == NULL || !strchr(args[1], '=')){
+        fprintf(stderr, ROJO_T"internal_export()--> Error de sintaxis. Usar export Nombre=Valor\n"RESET_FORMATO);
+        return FAILURE;
+    }
+
     char* nombre = strtok(args[1], "=");
     char* valor = strtok(NULL, "=");
 
     char* valorInicial = getenv(nombre);
     if (valorInicial){
         #if DEBUGN2
-        printf(GRIS_T"Valor inicial de la variable %s: %s\n"RESET_FORMATO, nombre, valorInicial);
+        printf(GRIS_T"internal_export()--> Valor inicial de la variable de entorno %s: %s\n"RESET_FORMATO, nombre, valorInicial);
         #endif
     }else{
-        fprintf(stderr, ROJO_T"No se ha encontrado la variable de entorno %s\n"RESET_FORMATO, nombre);
+        fprintf(stderr, ROJO_T"internal_export()--> No se ha encontrado la variable de entorno %s\n"RESET_FORMATO, nombre);
         return FAILURE;
     }
 
     setenv(nombre, valor, 1);
 
     #if DEBUGN2
-    printf(GRIS_T"Nuevo valor de la variable de entorono %s: %s\n"RESET_FORMATO, nombre, getenv(nombre));
+        printf(GRIS_T"internal_export()--> Nuevo valor de la variable de entorno %s: %s\n"RESET_FORMATO, nombre, getenv(nombre));
     #endif
 
     return 1;
 }
 
 int internal_source(char **args) {
-    #if DEBUGN1 
+    #if DEBUGN2
         fprintf(stderr, GRIS_T"[internal_source()→ comando interno no implementado]\n"RESET_FORMATO);
     #endif
     return 1;
 }
 
 int internal_jobs(char **args) {
-    #if DEBUGN1 
+    #if DEBUGN2
         fprintf(stderr, GRIS_T"[internal_jobs()→ Esta función mostrará el PID de los procesos que no estén en foreground]\n"RESET_FORMATO);
     #endif
     return 1;
 }
 
 int internal_fg(char **args) {
-    #if DEBUGN1 
+    #if DEBUGN2
         fprintf(stderr, GRIS_T"[internal_fg()→ Esta función enviará un trabajo detenido al foreground reactivando su ejecución, o uno del background al foreground ]\n"RESET_FORMATO);
     #endif
     return 1;
 }
 
 int internal_bg(char **args) {
-    #if DEBUGN1 
+    #if DEBUGN2
         fprintf(stderr, GRIS_T"[internal_bg()→ Esta función reactivará un proceso detenido para que siga ejecutándose pero en segundo plano]\n"RESET_FORMATO);
     #endif
     return 1;

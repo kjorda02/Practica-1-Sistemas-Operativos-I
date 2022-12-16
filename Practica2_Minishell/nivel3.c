@@ -13,7 +13,6 @@
 #define _POSIX_C_SOURCE 200112L
 #define DEBUGN3 1
 #define DEBUGN2 0
-#define DEBUGN1 0
 
 #define RESET_FORMATO "\x1b[0m"
 #define NEGRO_T "\x1b[30m"
@@ -168,11 +167,10 @@ int execute_line(char *line){
                 jobs_list[0].status='E';
                 strcpy(jobs_list[0].cmd, copiaLine);
                 jobs_list[0].pid=pid;
+                
                 #if DEBUGN3
-                    fprintf(stderr, GRIS_T"[execute_line()→PID del proceso padre: %d]\n"RESET_FORMATO, getpid());
-                    fprintf(stderr, GRIS_T"[execute_line()→PID del proceso hijo: %d]\n"RESET_FORMATO, pid);
-                    fprintf(stderr, GRIS_T"[execute_line()→Nombre del programa que actua como shell: %s]\n"RESET_FORMATO, mi_shell);
-                    fprintf(stderr, GRIS_T"[execute_line()→Comando del hijo en ejeccución en primer plano: %s]\n"RESET_FORMATO, jobs_list[0].cmd);
+                    fprintf(stderr, GRIS_T"[execute_line()→PID del proceso padre: %d (%s)]\n"RESET_FORMATO, getpid(), mi_shell);
+                    fprintf(stderr, GRIS_T"[execute_line()→PID del proceso hijo: %d (%s)]\n"RESET_FORMATO, pid, jobs_list[0].cmd);
                 #endif
                 
                 int status;
@@ -182,7 +180,7 @@ int execute_line(char *line){
                     fprintf(stderr, GRIS_T"[execute_line()→El proceso hijo a finalizado ");
                     if (WIFEXITED(status)){
                         int estado = WEXITSTATUS(status);
-                        fprintf(stderr, GRIS_T"con exit(), estado = %d]\n"RESET_FORMATO, estado);
+                        fprintf(stderr, GRIS_T"con exit status %d]\n"RESET_FORMATO, estado);
                     } 
                     else if(WIFSIGNALED(status)){
                         int signal = WTERMSIG(status);
@@ -217,9 +215,6 @@ int parse_args(char **args, char *line) {
 
     // si args[i]!= NULL && *args[i]!='#' pasamos al siguiente token
     while (args[i] && args[i][0] != '#') {
-        #if DEBUGN1
-            fprintf(stderr, GRIS_T"[parse_args()→token %d: %s]\n"RESET_FORMATO, i, args[i]);  // Mensaje de debug
-        #endif
         i++;
         args[i] = strtok(NULL, " \t\n\r");
     }
@@ -324,31 +319,30 @@ int internal_cd(char **args) {
             }
         }
         ruta = str;
-        printf("Ruta: |%s|\n", ruta);
     }
 
     // Cambiamos la ruta
     if (chdir(ruta)){  // Llama a chdir() para cambiar de ruta y si no devuelve 0 informa del error
-        perror(ROJO_T"Error de chdir() al cambiar de ruta"RESET_FORMATO);
+        perror(ROJO_T"internal_cd()--> Error de chdir() al cambiar de ruta"RESET_FORMATO);
         return FAILURE;
     }
 
     // Obtener el nuevo 'current working directory' con getcwd()
     char cwd[COMMAND_LINE_SIZE];
     if (getcwd(cwd, COMMAND_LINE_SIZE) == NULL){  // Llama a getcwd() y si devuelve NULL informa del error
-        perror(ROJO_T"Error de getcwd()\n"RESET_FORMATO);
+        perror(ROJO_T"internal_cd()--> Error de getcwd()\n"RESET_FORMATO);
         return FAILURE;
     }
 
     // Actualizamos la variable de entorno PWD
     if (setenv("PWD", cwd, 1)){
-        perror(ROJO_T"Error de setenv() al actualizar la variable de entorno PWD"RESET_FORMATO);
+        perror(ROJO_T"internal_cd()--> Error de setenv() al actualizar la variable de entorno PWD"RESET_FORMATO);
         return FAILURE;
     }
 
     // Mensaje de debug
     #if DEBUGN2
-        fprintf(stderr, GRIS_T"[Nuevo directorio actual: %s]\n", cwd);
+        fprintf(stderr, GRIS_T"internal_cd()--> [Nuevo directorio actual: %s]\n", cwd);
     #endif
     return 1;
 } 
@@ -360,23 +354,28 @@ int internal_cd(char **args) {
     Devuelve 1 (TRUE) para indicar que es un comando interno o -1 si ha habido error
 */
 int internal_export(char **args) {
+    if (args[1] == NULL || !strchr(args[1], '=')){
+        fprintf(stderr, ROJO_T"internal_export()--> Error de sintaxis. Usar export Nombre=Valor\n"RESET_FORMATO);
+        return FAILURE;
+    }
+
     char* nombre = strtok(args[1], "=");
     char* valor = strtok(NULL, "=");
 
     char* valorInicial = getenv(nombre);
     if (valorInicial){
         #if DEBUGN2
-        printf(GRIS_T"Valor inicial de la variable %s: %s\n"RESET_FORMATO, nombre, valorInicial);
+            printf(GRIS_T"internal_export()--> Valor inicial de la variable de entorno %s: %s\n"RESET_FORMATO, nombre, valorInicial);
         #endif
     }else{
-        fprintf(stderr, ROJO_T"No se ha encontrado la variable de entorno %s\n"RESET_FORMATO, nombre);
+        fprintf(stderr, ROJO_T"internal_export()--> No se ha encontrado la variable de entorno %s\n"RESET_FORMATO, nombre);
         return FAILURE;
     }
 
     setenv(nombre, valor, 1);
 
     #if DEBUGN2
-    printf(GRIS_T"Nuevo valor de la variable de entorono %s: %s\n"RESET_FORMATO, nombre, getenv(nombre));
+        printf(GRIS_T"internal_export()--> Nuevo valor de la variable de entorno %s: %s\n"RESET_FORMATO, nombre, getenv(nombre));
     #endif
 
     return 1;
@@ -417,21 +416,21 @@ int internal_source(char **args) {
 }
 
 int internal_jobs(char **args) {
-    #if DEBUGN1 
+    #if DEBUGN3
         printf("[internal_jobs()→ Esta función mostrará el PID de los procesos que no estén en foreground]\n");
     #endif
     return 1;
 }
 
 int internal_fg(char **args) {
-    #if DEBUGN1 
+    #if DEBUGN3
         printf("[internal_fg()→ Esta función enviará un trabajo detenido al foreground reactivando su ejecución, o uno del background al foreground ]\n");
     #endif
     return 1;
 }
 
 int internal_bg(char **args) {
-    #if DEBUGN1 
+    #if DEBUGN3
         printf("[internal_bg()→ Esta función reactivará un proceso detenido para que siga ejecutándose pero en segundo plano]\n");
     #endif
     return 1;

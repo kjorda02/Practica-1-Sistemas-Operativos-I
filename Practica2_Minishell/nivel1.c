@@ -142,10 +142,18 @@ int parse_args(char **args, char *line) {
         args[i] = strtok(NULL, " \t\n\r");
     }
 
+    #if DEBUGN1
+            fprintf(stderr, GRIS_T"[parse_args()→token %d: %s]\n"RESET_FORMATO, i, args[i]);  // Mensaje de debug
+    #endif
+
     //si el ultimo token no es NULL lo convertimos en NULL
     if (args[i]) {
         args[i] = NULL; // por si el último token es el símbolo comentario
+        #if DEBUGN1
+            fprintf(stderr, GRIS_T"[parse_args()→token %d corregido: %s]\n"RESET_FORMATO, i, args[i]);  // Mensaje de debug
+        #endif
     }
+
     return i;
 }
 
