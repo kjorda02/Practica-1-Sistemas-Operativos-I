@@ -11,7 +11,6 @@
 
 //DIRECTIVAS PARA EL PREPROCESADOR
 #define _POSIX_C_SOURCE 200112L
-#define DEBUGN6 1
 
 #define RESET_FORMATO "\x1b[0m"
 #define NEGRO_T "\x1b[30m"
@@ -447,9 +446,6 @@ int internal_fg(char **args) {
 
     if (jobs_list[pos].status == 'D'){  // Si el estatus es detenido enviar la señal SIGCONT para que se reanude el proceso hijo
         kill(jobs_list[pos].pid, SIGCONT);
-        #if DEBUGN6
-            fprintf(stderr, GRIS_T"[internal_fg()--> Enviada la señal SIGCONT al trabajo %d con pid %d (%s)]\n" RESET_FORMATO, pos, jobs_list[pos].pid, jobs_list[pos].cmd);
-        #endif
     }
 
     char* ampersand = strchr(jobs_list[pos].cmd, '&');
@@ -503,10 +499,6 @@ int internal_bg(char **args) {
 
     //Enviar la señal SIGCONT a jobs_list[pos].pid
     kill(jobs_list[pos].pid,SIGCONT);
-
-    #if DEBUGN6
-        fprintf(stderr, GRIS_T"[internal_bg()--> Enviada la señal SIGCONT al trabajo %d con pid %d (%s)]\n" RESET_FORMATO, pos, jobs_list[pos].pid, jobs_list[pos].cmd);
-    #endif
     
     printf("[%d] %d\t%c\t%s\n", pos, jobs_list[pos].pid, jobs_list[pos].status, jobs_list[pos].cmd);
 
