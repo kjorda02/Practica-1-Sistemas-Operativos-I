@@ -4,6 +4,7 @@
 ## Mejoras realizadas
 - Implementado una versión más avanzada del internal_cd, si bien no a la par de la sintaxis de bash.
 ## Restricciones del programa
+- No es posible usar el tabulador para autocompletar comandos
 - No es posible usar las teclas UP y DOWN para alternar entre comandos previos
 - No es posible usar las teclas LEFT y RIGHT para editar la línea del comando siendo introducido
 - No es posible usar la combinación de teclas CTRL+L para limpiar la terminal
