@@ -22,7 +22,15 @@ int main (int argc, char *argv[]){
         pila = my_stack_init(sizeof(int));
     }
     else{
-
+         ///if(my_stack_len(pila)<10){
+            //Mientras haya menos de 10 nodos
+            while(my_stack_len(pila)<10){
+            //numnodos= length de la pila
+                numnodos=my_stack_len(pila);
+            //creamos nuevo nodo en la pila
+                my_stack_push(pila,numnodos);
+            }
+       // }
     }
     exit(0);
 
@@ -36,4 +44,7 @@ void *worker(void *ptr){
     for (int i = 0; i < N_ITERACIONES; i++){
 
     }
+     pthread_join(identificadores[0],NULL);
+    my_stack_write(pila,nombreFichero);
+    pthread_exit(NULL);
 }
