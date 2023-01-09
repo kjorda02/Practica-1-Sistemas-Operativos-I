@@ -8,6 +8,7 @@ char nombreFichero[1024];
 pthread_mutex_t semaforo = PTHREAD_MUTEX_INITIALIZER;
 void *worker(void *ptr);
 struct my_stack* pila;
+int OriginalLenght=0;
 
 int main (int argc, char *argv[]){
     if (argc > 1){
@@ -26,10 +27,8 @@ int main (int argc, char *argv[]){
          ///if(my_stack_len(pila)<10){
             //Mientras haya menos de 10 nodos
             while(my_stack_len(pila)<NUM_THREADS){
-            //numnodos= length de la pila
-                numnodos=my_stack_len(pila);
             //creamos nuevo nodo en la pila
-                my_stack_push(pila,numnodos);
+                my_stack_push(pila,my_stack_len(pila));
             }
        // }
     }
@@ -39,6 +38,14 @@ int main (int argc, char *argv[]){
     for (int i = 0; i < NUM_THREADS; i++){
         pthread_create(&identificadores[i], NULL, worker, NULL);
     }
+        printf("\nThreads: %d, Itreations: %d \n", NUM_THREADS, N_ITERACIONES);
+        printf("stack->size: %d \n", pila->size);
+        printf("original stack lenght: %d \n", OriginalLenght);
+        printf("new stack lenght: %d \n\n", my_stack_len(pila));
+
+        pthread_join(identificadores[0],NULL);
+        my_stack_write(pila,nombreFichero);
+        pthread_exit(NULL);
 }
 
 void *worker(void *ptr){
@@ -52,8 +59,5 @@ void *worker(void *ptr){
         pthread_mutex_unlock(&semaforo);
         pthread_exit(NULL);
     }
-        pthread_join(identificadores[0],NULL);
-        my_stack_write(pila,nombreFichero);
-        pthread_exit(NULL);
     
 }
