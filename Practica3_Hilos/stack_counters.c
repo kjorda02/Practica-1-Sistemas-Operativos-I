@@ -43,9 +43,12 @@ int main (int argc, char *argv[]){
 
         //bloqueamos el hilo principal
         pthread_join(identificadores[0],NULL);
+    
         //guardamos la pila en el fichero
         my_stack_write(pila,argv[1]);
+        printf("Writen elements form stack to file: %d\n", my_stack_write(pila,argv[1]));
         pthread_exit(NULL);
+        printf("Released bytes: %d\n",  pthread_exit(NULL););
 }
 
 void *worker(void *ptr){
