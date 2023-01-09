@@ -32,7 +32,7 @@ int main (int argc, char *argv[]){
     //realizamos un bucle para crear los hilos
     for (int i = 0; i < NUM_THREADS; i++){
         pthread_create(&identificadores[i], NULL, worker, NULL);
-        printf("%d) Thread %ld created\n", i, thread[i]);
+        printf("%d) Thread %ld created\n", i, identificadores[i]);
     }
 
     printf("\nThreads: %d, Itreations: %d \n", NUM_THREADS, N_ITERACIONES);
@@ -47,8 +47,8 @@ int main (int argc, char *argv[]){
         //guardamos la pila en el fichero
         my_stack_write(pila,argv[1]);
         printf("Writen elements form stack to file: %d\n", my_stack_write(pila,argv[1]));
-        pthread_exit(NULL);
-        printf("Released bytes: %d\n",  pthread_exit(NULL););
+        int x =pthread_exit(NULL);
+        printf("Released bytes: %d\n", x);
 }
 
 void *worker(void *ptr){
