@@ -32,6 +32,7 @@ int main (int argc, char *argv[]){
     //realizamos un bucle para crear los hilos
     for (int i = 0; i < NUM_THREADS; i++){
         pthread_create(&identificadores[i], NULL, worker, NULL);
+        printf("%d) Thread %ld created\n", i, thread[i]);
     }
 
     printf("\nThreads: %d, Itreations: %d \n", NUM_THREADS, N_ITERACIONES);
