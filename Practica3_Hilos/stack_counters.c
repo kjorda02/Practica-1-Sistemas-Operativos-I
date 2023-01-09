@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <pthread.h>
 #define N_ITERACIONES 1000000
+#define NUM_THREADS  10
 
 char nombreFichero[1024];
 pthread_mutex_t semaforo = PTHREAD_MUTEX_INITIALIZER;
@@ -41,10 +42,18 @@ int main (int argc, char *argv[]){
 }
 
 void *worker(void *ptr){
+
     for (int i = 0; i < N_ITERACIONES; i++){
 
+        pthread_mutex_lock(&semaforo);
+        void *data = my_stack_pop(pila);
+        *data=*data+1;
+        my_stack_push(pila,data)
+        pthread_mutex_unlock(&semaforo);
+        pthread_exit(NULL);
     }
-     pthread_join(identificadores[0],NULL);
-    my_stack_write(pila,nombreFichero);
-    pthread_exit(NULL);
+        pthread_join(identificadores[0],NULL);
+        my_stack_write(pila,nombreFichero);
+        pthread_exit(NULL);
+    
 }
