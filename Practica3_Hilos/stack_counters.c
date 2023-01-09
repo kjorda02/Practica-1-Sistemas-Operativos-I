@@ -47,7 +47,7 @@ int main (int argc, char *argv[]){
         //guardamos la pila en el fichero
         my_stack_write(pila,argv[1]);
         printf("Writen elements form stack to file: %d\n", my_stack_write(pila,argv[1]));
-        int x =pthread_exit(NULL);
+        int x =pthread_exit(pila);
         printf("Released bytes: %d\n", x);
 }
 
