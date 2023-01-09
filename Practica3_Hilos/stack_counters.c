@@ -25,7 +25,7 @@ int main (int argc, char *argv[]){
     else{
          ///if(my_stack_len(pila)<10){
             //Mientras haya menos de 10 nodos
-            while(my_stack_len(pila)<10){
+            while(my_stack_len(pila)<NUM_THREADS){
             //numnodos= length de la pila
                 numnodos=my_stack_len(pila);
             //creamos nuevo nodo en la pila
@@ -35,8 +35,8 @@ int main (int argc, char *argv[]){
     }
     exit(0);
 
-    pthread_t identificadores[10];  
-    for (int i = 0; i < 10; i++){
+    pthread_t identificadores[NUM_THREADS];  
+    for (int i = 0; i < NUM_THREADS; i++){
         pthread_create(&identificadores[i], NULL, worker, NULL);
     }
 }
