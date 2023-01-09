@@ -28,7 +28,7 @@ int main(int argc, char *argv[]){
     //leemos un elemento de la pila
         int *data = my_stack_pop(pila);
     //sumamos el contenido
-        suma=suma + *data
+        suma=suma + *data;
     //si el contenido es menor que le minimo, este es el nuvo minimo
         if (*data <minimo ){
             minimo = *data;
