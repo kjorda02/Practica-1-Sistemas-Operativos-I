@@ -41,7 +41,7 @@ int main(int argc, char *argv[]){
     //la media será la suma total divido la cantidad de elementos
     media = suma/length;
     //printeamos el resultado
-    printf("Items: %d Sum: %d Min: %d Max: %d Average: %d\n",suma, minimo, maximo, media);
+    printf("Sum: %d Min: %d Max: %d Average: %d\n",suma, minimo, maximo, media);
     //liberamos la memoria 
     my_stack_purge(pila);
     
