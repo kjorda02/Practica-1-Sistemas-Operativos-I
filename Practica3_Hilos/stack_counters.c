@@ -37,6 +37,7 @@ int main (int argc, char *argv[]){
     printf("\nThreads: %d, Itreations: %d \n", NUM_THREADS, N_ITERACIONES);
     printf("stack->size: %d \n", pila->size);
     printf("original stack lenght: %d \n", OriginalLenght);
+    //printf("initial stack content: %s \n\n", my_stack_));
     printf("new stack lenght: %d \n\n", my_stack_len(pila));
 
         //bloqueamos el hilo principal
