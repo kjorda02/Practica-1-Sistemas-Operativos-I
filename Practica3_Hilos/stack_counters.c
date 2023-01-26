@@ -25,6 +25,17 @@ int main (int argc, char *argv[]){
     //si la pila no existe la creamos
     if (!pila){
         pila = my_stack_init(sizeof(int));
+    }else{
+        //si la pila existe y tiene menos de 10 nodos vamos agregando nuevos
+        //nodos con el valor inicializado en 0
+        while (my_stack_len(pila)<10){
+            my_stack_push(pila,NULL);
+            }
+        //si la pila existe y tiene mas de 10 nodos vamos quitando nodos
+        while(mys_stack_len(pila)>10){
+            my_stack_pop(pila);
+        }    
+        
     }
     exit(0);
 
