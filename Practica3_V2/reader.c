@@ -38,15 +38,15 @@ int main(int argc, char **argv)
         suma=suma + *(data);
 
         if (*data <minimo ){
-            minimo = *(data);
+            minimo = *data;
         }
           if (*data >maximo ){
-            maximo = *(data);
+            maximo = *data;
         }
-        printf("%d\n",*(data));
+        printf("%d\n",*data);
         
     }
-    media = suma/10;
+    media = suma/length;
     printf("Sum: %d Min: %d Max: %d Average: %d\n",suma, minimo, maximo, media);
     my_stack_purge(pila);
 }
