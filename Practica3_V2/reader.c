@@ -21,14 +21,19 @@ int main(int argc, char **argv)
         fprintf(stderr, "No existe el fichero: %s\n", argv[1]);
         return EXIT_FAILURE;
     }
-     int length = my_stack_len(pila);
+    
+    int length = 10; 
     int suma = 0;
-    int minimo = 0;
-    int maximo = 0;
+    int minimo = INT_MAX;
+    int maximo = INT_MIN;
     int media = 0;
+    
+    int *data;
+    //reservamos espacio
+    data = malloc(sizeof(int));
     //mientras queden elementos dentro de la pila
     while(my_stack_len(pila)>0){
-        int *data = my_stack_pop(pila);
+        data = my_stack_pop(pila);
 
         suma=suma + *(data);
 
@@ -41,7 +46,7 @@ int main(int argc, char **argv)
         printf("%d\n",*(data));
         
     }
-    media = suma/length;
+    media = suma/10;
     printf("Sum: %d Min: %d Max: %d Average: %d\n",suma, minimo, maximo, media);
     my_stack_purge(pila);
 }
